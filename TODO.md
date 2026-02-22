@@ -1,0 +1,3 @@
+- [ ] implement Generative Algortihms
+- [ ] numpy array chess board like logic?
+- [ ] corner radiuses for turning
