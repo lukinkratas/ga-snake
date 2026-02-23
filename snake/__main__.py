@@ -1,4 +1,5 @@
 from collections import deque
+from typing import Any
 
 import numpy as np
 import pygame
@@ -20,7 +21,16 @@ def get_rect(x, y):
     return pygame.Rect(x, y, SIZE, SIZE)
 
 
-def draw_circle(surf, rect, color, line_color, line_width: int = 2, radius: int = 8):
+def draw_circle(
+    surf,
+    rect,
+    color,
+    line_color,
+    line_width: int = 2,
+    radius: int = 8,
+    *args: Any,
+    **kwargs: Any,
+):
     # draw filled circle
     pygame.draw.circle(surface=surf, color=color, center=rect.center, radius=radius)
     # draw line around circle
@@ -30,11 +40,22 @@ def draw_circle(surf, rect, color, line_color, line_width: int = 2, radius: int 
         center=rect.center,
         radius=radius,
         width=line_width,
+        *args,
+        **kwargs,
     )
     return rect
 
 
-def draw_rect(surf, rect, color, line_color, line_width: int = 2, radius: int = 5):
+def draw_rect(
+    surf,
+    rect,
+    color,
+    line_color,
+    line_width: int = 2,
+    radius: int = 5,
+    *args: Any,
+    **kwargs: Any,
+):
     # draw filled rect
     pygame.draw.rect(surface=surf, color=color, rect=rect, border_radius=radius)
     # draw line around rect
@@ -44,6 +65,8 @@ def draw_rect(surf, rect, color, line_color, line_width: int = 2, radius: int = 
         rect=rect,
         width=line_width,
         border_radius=radius,
+        *args,
+        **kwargs,
     )
     return rect
 
@@ -63,15 +86,15 @@ class Snake:
         self.alive = True
 
     @property
-    def head(self):
+    def head_rect(self):
         return self.rects[0]
 
     @property
-    def body(self):
-        return self.rects[1:]
+    def body_rects(self):
+        return self.rects[1:-1]
 
     @property
-    def tail(self):
+    def tail_rect(self):
         return self.rects[-1]
 
     @property
@@ -80,8 +103,40 @@ class Snake:
 
     def draw(self):
 
-        for rect in self.rects:
+        extra_radius = 10
+
+        head_kwargs_map = {
+            (1, 0): {
+                "border_top_right_radius": extra_radius,
+                "border_bottom_right_radius": extra_radius,
+            },
+            (-1, 0): {
+                "border_top_left_radius": extra_radius,
+                "border_bottom_left_radius": extra_radius,
+            },
+            (0, 1): {
+                "border_bottom_left_radius": extra_radius,
+                "border_bottom_right_radius": extra_radius,
+            },
+            (0, -1): {
+                "border_top_left_radius": extra_radius,
+                "border_top_right_radius": extra_radius,
+            },
+        }
+        head_kwargs = head_kwargs_map.get(tuple(self.head_dir))
+
+        draw_rect(
+            self.surf,
+            self.head_rect,
+            self.color,
+            line_color=(50, 50, 50),
+            **head_kwargs,
+        )
+
+        for rect in self.body_rects:
             draw_rect(self.surf, rect, self.color, line_color=(50, 50, 50))
+
+        draw_rect(self.surf, self.tail_rect, self.color, line_color=(50, 50, 50))
 
     def move(self):
         keymap = {
@@ -114,7 +169,7 @@ class Snake:
 
     def extend(self):
         self.dirs_q.append(self.tail_dir)
-        self.rects.append(self.tail.move(*(-self.tail_dir * SIZE)))
+        self.rects.append(self.tail_rect.move(*(-self.tail_dir * SIZE)))
 
 
 class Apple:
@@ -252,21 +307,25 @@ def draw_grid(surf, line_color: tuple[int] = (150, 150, 150)):
 def eval_frame(border: Border, apple: Apple, players: list[Player]) -> bool:
 
     for player in players:
-        if player.snake.alive is False:
+        snake = player.snake
+
+        if snake.alive is False:
             continue
 
         # border collision
-        if player.snake.head.collidelist(border.rects) != -1:
-            player.snake.alive = False
+        if snake.head_rect.collidelist(border.rects) != -1:
+            snake.alive = False
 
         # self collision
-        if player.snake.head.collidelist(player.snake.body) != -1:
-            player.snake.alive = False
+        if snake.head_rect.collidelist(
+            snake.body_rects
+        ) != -1 or snake.head_rect.colliderect(snake.tail_rect):
+            snake.alive = False
 
-        if player.snake.head.colliderect(apple.rect):
+        if snake.head_rect.colliderect(apple.rect):
             player.score += 1
-            player.snake.extend()
-            apple.move(exclude=player.snake.rects)
+            snake.extend()
+            apple.move(exclude=snake.rects)
 
 
 def render_frame(
