@@ -1,76 +1,79 @@
-from abc import ABC, abstractmethod
-from functools import lru_cache
+from itertools import product
 
 import numpy as np
+from names_generator import generate_name
 
+from .const import GRID_SIZE
 from .state import Apple, Snake, Wall
 from .utils import get_random_color
 
 
-@lru_cache
-def _get_wall():
-    """Lazy init the same wall object for multiple snakes and apples."""
-    return Wall()
-
-
-class Player(ABC):
-    def __init__(self, color: tuple[int]):
-        self.color = color
-        self.score = 0
-        self.snake = Snake(color)
-
-    @abstractmethod
-    def set_dir(self) -> np.ndarray | None:
-        pass
+class Player:
+    def __init__(self, color: tuple[int], controller, name: str | None = None):
+        self.controller = controller
+        self.name = name or generate_name(style="capital")
 
 
 class Game:
     def __init__(
         self,
+        width: int,
+        height: int,
         player: Player,
+        wall: Wall,
         color: tuple[int, int, int] | None = None,
+        snake: Snake | None = None,
         apple: Apple | None = None,
     ):
+        self.width = width
+        self.height = height
         self.player = player
+        self.wall = wall
         self.color = color or get_random_color()
-        self.apple = apple or Apple(self.color)
-        self.wall = _get_wall()
+        self.snake = snake or Snake(self.color)
+        self.apple = apple or Apple(
+            self.color,
+            available_coords=self._get_available_apple_coords(),
+            exclude_coords=self.wall.coords + self.snake.coords,
+        )
+        self.reset()
+
+    def reset(self) -> None:
+        self.snake.reset()
+        self.apple.reset(exclude_coords=self.wall.coords + self.snake.coords)
+        self.score = 0
+        self.steps = 0
+        self.active = True
+
+    def _get_available_apple_coords(self):
+        xs = GRID_SIZE * np.arange(int(self.width / GRID_SIZE))
+        ys = GRID_SIZE * np.arange(int(self.height / GRID_SIZE))
+        return [np.array(c) for c in product(xs, ys)]
 
     def eval_state(self) -> bool:
 
-        snake = self.player.snake
-
-        # if snake.alive is False:
-        #     continue
-
         # wall collision
-        if snake.head_rect.collidelist(self.wall.rects) != -1:
-            snake.alive = False
+        if any(np.array_equal(self.snake.head_coords, wc) for wc in self.wall.coords):
+            self.active = False
             print("Wall collision.")
 
         # self collision
-        if snake.head_rect.collidelist(
-            snake.body_rects
-        ) != -1 or snake.head_rect.colliderect(snake.tail_rect):
-            snake.alive = False
+        if any(
+            np.array_equal(self.snake.head_coords, bc) for bc in self.snake.body_coords
+        ):
+            self.active = False
             print("Self collision.")
 
-        if snake.head_rect.colliderect(self.apple.rect):
-            self.player.score += 1
-            snake.extend()
-            self.apple.move(exclude=snake.rects)
+        if np.array_equal(self.snake.head_coords, self.apple.coords):
+            self.score += 1
+            self.snake.extend()
+            self.apple.move(exclude_coords=self.wall.coords + self.snake.coords)
             print("Apple eaten.")
 
-        if snake.alive is False:
-            return False
+        return self.active
 
-        return True
-
-    def step(self, direction: np.ndarray) -> bool:
-        run = self.eval_state()
-
-        if self.player.snake.alive:
-            self.player.snake.move(direction)
+    def move(self, direction: np.ndarray) -> None:
+        if self.active:
+            self.snake.move(direction)
             print("Snake moving.")
-
-        return run
+            self.steps += 1

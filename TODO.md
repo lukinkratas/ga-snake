@@ -1,5 +1,21 @@
 - [ ] implement Generative Algortihms
 - [ ] numpy array chess board like logic?
-- [ ] corner radiuses for turning
 - [ ] directions enum
-- [ ] rename border to wall
+- [ ] docker like names
+- [ ] ROWS -> NROWS, COLS -> NCOLS
+- [ ] fix turning animation (in case snake goes diagonal)
+- [ ] logging
+- [ ] eye dot to distinguish head, xs in case of death
+- [ ] add deatch reason?
+- [ ] render wall tech debt
+- [ ] steps as fitness
+- [ ] apple reset - exlcude by default snake init pos (class atr)
+- [ ] merge danger wall and danger vody per direction 10,4 -> 6,4
+- [ ] merge genome and GA Controller classes?
+- [ ] add matplotlib live plot
+- [ ] is player class even needed?
+- [ ] humaxn x ga window setup - diff grid size, win and scoreboard dims.
+- [ ] apple center
+- [ ] init_render()
+- [ ] parametrize grid size
+- [ ] q for exit, r for reset in play

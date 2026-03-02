@@ -1,71 +1,96 @@
+import random
 from collections import deque
 
 import numpy as np
 import pygame
 
-from .const import (
-    COLS,
-    GAME_HEIGHT,
-    GAME_ROWS,
-    GRID_SIZE,
-    LEFT,
-    RIGHT,
-    WIDTH,
-)
+from .const import GRID_SIZE, LEFT, RIGHT
 
 
-def get_rect(x, y):
-    return pygame.Rect(x, y, GRID_SIZE, GRID_SIZE)
+def get_rect(coords: np.ndarray):
+    return pygame.Rect(*coords, GRID_SIZE, GRID_SIZE)
 
 
 class Apple:
-    def __init__(self, color: tuple[int]):
+    def __init__(
+        self,
+        color: tuple[int],
+        available_coords: list[np.ndarray],
+        exclude_coords: list[np.ndarray],
+    ):
         self.color = color
-        self.pos = GRID_SIZE * np.array([int(3 * COLS / 4), int(3 * GAME_ROWS / 4)])
+        self.available_coords = available_coords
+        self.reset(exclude_coords)
+
+    def reset(self, exclude_coords: list[np.ndarray]):
+        self.move(exclude_coords)
+
+    def move(self, exclude_coords: list[np.ndarray]):
+
+        while True:
+            new_coords = random.choice(self.available_coords)
+            if not any(np.array_equal(new_coords, c) for c in exclude_coords):
+                break
+
+            print("Re-arranging apple.")
+
+        self.coords = new_coords
 
     @property
     def rect(self):
-        return get_rect(*self.pos)
-
-    def move(self, exclude: list[pygame.Rect]):
-        while True:
-            # exclude border by default
-            new_x = np.random.randint(1, COLS - 1, size=1)
-            new_y = np.random.randint(1, GAME_ROWS - 1, size=1)
-            self.pos = GRID_SIZE * np.concatenate((new_x, new_y))
-            # TODO FIX
-            if self.rect.collidelist(exclude) == -1:
-                break
-            print("re-regenarating apple")
+        return get_rect(self.coords)
 
 
 class Snake:
+    INIT_HEAD_COORDS = GRID_SIZE * np.array([10, 10])
+    INIT_COORDS = [
+        INIT_HEAD_COORDS,
+        INIT_HEAD_COORDS + GRID_SIZE * LEFT,
+        INIT_HEAD_COORDS + 2 * GRID_SIZE * LEFT,
+    ]
+
     def __init__(self, color: tuple[int]):
         self.color = color
-        self.head_pos = GRID_SIZE * np.array([int(COLS / 2), int(GAME_ROWS / 2)])
-        self.rects = [
-            get_rect(*self.head_pos),
-            get_rect(*(self.head_pos + GRID_SIZE * LEFT)),
-            get_rect(*(self.head_pos + 2 * GRID_SIZE * LEFT)),
-        ]
+        self.reset()
+
+    def reset(self) -> None:
+        self.coords = [c.copy() for c in self.INIT_COORDS]
         self.head_dir = RIGHT
         self.dirs_q = deque([self.head_dir, RIGHT, RIGHT])
-        self.alive = True
+
+    @property
+    def rects(self):
+        return [get_rect(c) for c in self.coords]
+
+    # @property
+    # def head_pos(self):
+    #     return self.head_rect.topleft
 
     @property
     def head_rect(self):
+        # Used for rendering
         return self.rects[0]
 
     @property
     def body_rects(self):
-        return self.rects[1:-1]
+        # Used for rendering
+        return self.rects[1:]
 
     @property
-    def tail_rect(self):
-        return self.rects[-1]
+    def head_coords(self) -> np.ndarray:
+        return self.coords[0]
+
+    @property
+    def body_coords(self) -> np.ndarray:
+        return self.coords[1:]
+
+    @property
+    def tail_coords(self):
+        return self.coords[-1]
 
     @property
     def tail_dir(self):
+        # Used for extending
         return self.dirs_q[-1]
 
     def move(self, direction: np.ndarray | None):
@@ -76,37 +101,19 @@ class Snake:
         self.dirs_q.appendleft(self.head_dir)
         self.dirs_q.pop()
 
-        for rect, direction in zip(self.rects, self.dirs_q):
-            rect.move_ip(*(direction * GRID_SIZE))
+        for c, direction in zip(self.coords, self.dirs_q):
+            c += direction * GRID_SIZE
 
     def extend(self):
+        self.coords.append(self.tail_coords.copy() - self.tail_dir * GRID_SIZE)
         self.dirs_q.append(self.tail_dir)
-        self.rects.append(self.tail_rect.move(*(-self.tail_dir * GRID_SIZE)))
 
 
 class Wall:
-    def __init__(self):
+    def __init__(self, coords: list[np.ndarray]):
         self.color = tuple(50 * np.ones(3))
-        self.rects = self.get_rects()
+        self.coords = coords
 
-    def get_rects(self):
-        rects = []
-
-        rects += [get_rect(x, y=0) for x in np.arange(0, WIDTH - 1, GRID_SIZE)]
-
-        rects += [
-            get_rect(x, y=GAME_HEIGHT - GRID_SIZE)
-            for x in np.arange(0, WIDTH - 1, GRID_SIZE)
-        ]
-
-        rects += [
-            get_rect(0, y)
-            for y in np.arange(GRID_SIZE, GAME_HEIGHT - GRID_SIZE - 1, GRID_SIZE)
-        ]
-
-        rects += [
-            get_rect(WIDTH - GRID_SIZE, y)
-            for y in np.arange(GRID_SIZE, GAME_HEIGHT - GRID_SIZE - 1, GRID_SIZE)
-        ]
-
-        return rects
+    @property
+    def rects(self):
+        return [get_rect(c) for c in self.coords]

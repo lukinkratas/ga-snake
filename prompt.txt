@@ -1,0 +1,261 @@
+### Project Structure
+.
+├── ga_train.py
+├── play.py
+├── prompt.txt
+├── pyproject.toml
+├── README.md
+├── snake
+│   ├── __init__.py
+│   ├── __pycache__
+│   │   ├── __init__.cpython-312.pyc
+│   │   ├── __main__.cpython-312.pyc
+│   │   ├── const.cpython-312.pyc
+│   │   ├── engine.cpython-312.pyc
+│   │   ├── renderer.cpython-312.pyc
+│   │   ├── state.cpython-312.pyc
+│   │   └── utils.cpython-312.pyc
+│   ├── const.py
+│   ├── engine.py
+│   ├── renderer.py
+│   ├── state.py
+│   └── utils.py
+├── TODO.md
+└── uv.lock
+
+3 directories, 20 files
+
+ga_train.py: ```
+import numpy as np
+import pygame
+
+from snake.const import (
+    DOWN,
+    GAME_HEIGHT,
+    GRID_SIZE,
+    LEFT,
+    RIGHT,
+    SCORE_HEIGHT,
+    UP,
+    WIDTH,
+)
+from snake.engine import Game, Player
+from snake.renderer import render_frame
+from snake.state import Apple, Snake, Wall
+from snake.utils import get_random_color
+
+
+class GAController:
+    def __init__(self, genome: np.ndarray):
+        self.reset(genome)
+
+    def reset(self, genome: np.ndarray):
+        self.genome = genome
+
+    def set_dir(self, features: np.ndarray) -> np.ndarray:
+        scores = features @ self.genome  # linear combination
+        move_idx = np.argmax(scores)
+
+        directions = [UP, DOWN, LEFT, RIGHT]
+        return directions[move_idx]
+
+    def eval_state(self, snake: Snake, apple: Apple, wall: Wall) -> np.ndarray:
+        AVAILABLE_WIDTH = WIDTH - 2 * GRID_SIZE
+        AVAILABLE_HEIGHT = GAME_HEIGHT - 2 * GRID_SIZE
+        head_x = snake.head_rect.x
+        head_y = snake.head_rect.y
+
+        # Distances to walls
+        wall_rights = (
+            head_x
+            - np.array(
+                [rect.x for rect in wall.rects if rect.y == head_y and rect.x < head_x]
+            )
+        ) / AVAILABLE_WIDTH
+        # No bodies rects found on the right
+        danger_wall_right = (
+            np.min(wall_rights) if wall_rights.size != 0 else np.float64(0)
+        )
+
+        wall_lefts = (
+            np.array(
+                [rect.x for rect in wall.rects if rect.y == head_y and rect.x > head_x]
+            )
+            - head_x
+        ) / AVAILABLE_WIDTH
+        # No bodies rects found on the right
+        danger_wall_left = np.min(wall_lefts) if wall_lefts.size != 0 else np.float64(0)
+
+        wall_ups = (
+            np.array(
+                [rect.y for rect in wall.rects if rect.x == head_x and rect.y > head_y]
+            )
+            - head_y
+        ) / AVAILABLE_HEIGHT
+        # No bodies rects found on the right
+        danger_wall_up = np.min(wall_ups) if wall_ups.size != 0 else np.float64(0)
+
+        wall_downs = (
+            head_y
+            - np.array(
+                [rect.y for rect in wall.rects if rect.x == head_x and rect.y < head_y]
+            )
+        ) / AVAILABLE_HEIGHT
+        # No bodies rects found on the right
+        danger_wall_down = np.min(wall_downs) if wall_downs.size != 0 else np.float64(0)
+
+        # Distances to snake body (manhattan in each direction)
+        body_rights = (
+            np.array(
+                [
+                    rect.x
+                    for rect in snake.rects[1:]
+                    if rect.y == head_y and rect.x > head_x
+                ]
+            )
+            - head_x
+        ) / GRID_SIZE
+        # No bodies rects found on the right
+        danger_body_right = (
+            np.min(body_rights) if body_rights.size != 0 else np.float64(0)
+        )
+
+        body_lefts = (
+            head_x
+            - np.array(
+                [
+                    rect.x
+                    for rect in snake.rects[1:]
+                    if rect.y == head_y and rect.x < head_x
+                ]
+            )
+        ) / GRID_SIZE
+        # No bodies rects found on the right
+        danger_body_left = np.min(body_lefts) if body_lefts.size != 0 else np.float64(0)
+
+        body_ups = (
+            np.array(
+                [
+                    rect.y
+                    for rect in snake.rects[1:]
+                    if rect.x == head_x and rect.y > head_y
+                ]
+            )
+            - head_y
+        ) / GRID_SIZE
+        # No bodies rects found on the right
+        danger_body_up = np.min(body_ups) if body_ups.size != 0 else np.float64(0)
+
+        body_downs = (
+            head_y
+            - np.array(
+                [
+                    rect.y
+                    for rect in snake.rects[1:]
+                    if rect.x == head_x and rect.y < head_y
+                ]
+            )
+        ) / GRID_SIZE
+        # No bodies rects found on the right
+        danger_body_down = np.min(body_downs) if body_downs.size != 0 else np.float64(0)
+
+        # Distances to apple
+        apple_dx = apple.rect.x - snake.head_rect.x
+        apple_dy = apple.rect.y - snake.head_rect.y
+
+        apple_dx /= AVAILABLE_WIDTH
+        apple_dy /= AVAILABLE_HEIGHT
+
+        features = np.array(
+            [
+                danger_wall_right,
+                danger_wall_left,
+                danger_wall_up,
+                danger_wall_down,
+                danger_body_right,
+                danger_body_left,
+                danger_body_up,
+                danger_body_down,
+                apple_dx,
+                apple_dy,
+            ]
+        )
+
+        print("features:")
+        print(f"  {danger_wall_right=}")
+        print(f"  {danger_wall_left=}")
+        print(f"  {danger_wall_down=}")
+        print(f"  {danger_wall_up=}")
+        print(f"  {danger_body_right=}")
+        print(f"  {danger_body_left=}")
+        print(f"  {danger_body_down=}")
+        print(f"  {danger_body_up=}")
+        print(f"  {apple_dx=}")
+        print(f"  {apple_dy=}")
+        return features
+
+
+def main():
+    pygame.init()
+
+    win = pygame.display.set_mode(size=(WIDTH, GAME_HEIGHT + SCORE_HEIGHT))
+    pygame.display.set_caption("Snake")
+
+    game_rect = pygame.Rect(0, 0, WIDTH, GAME_HEIGHT)
+    game_surf = win.subsurface(game_rect)
+
+    score_rect = pygame.Rect(0, GAME_HEIGHT, WIDTH, SCORE_HEIGHT)
+    score_surf = win.subsurface(score_rect)
+
+    clock = pygame.time.Clock()
+
+    # common wall for all games
+    wall = Wall()
+    pop_size = 3
+    games = []
+    for idx in range(pop_size):
+        color = get_random_color()
+        genome = np.random.randn(10, 4)
+        controller = GAController(genome)
+        player = Player(color, controller)
+        snake = Snake(color)
+        apple = Apple(color, exclude=snake.rects)
+        game = Game(player, snake, apple, wall, color)
+        games.append(game)
+
+    render_frame(game_surf, score_surf, games)
+
+    pygame.time.delay(100)
+
+    # game loop
+    running = True
+    while running:
+        clock.tick(120)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+
+        for game in games:
+            features = game.player.controller.eval_state(
+                game.snake, game.apple, game.wall
+            )
+            direction = game.player.controller.set_dir(features)
+            game.move(direction)
+            game.eval_state()
+
+        render_frame(game_surf, score_surf, games)
+        running = any(game.snake.active for game in games)
+
+    while True:
+        event = pygame.event.wait()
+
+        if event.type in [pygame.QUIT, pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN]:
+            break
+
+    pygame.quit()
+
+
+if __name__ == "__main__":
+    main()
+```
