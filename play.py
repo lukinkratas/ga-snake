@@ -1,18 +1,27 @@
+import logging
+
 import numpy as np
 import pygame
 
-from snake.const import DOWN, GRID_SIZE, LEFT, RIGHT, UP
+from snake.const import DOWN, LEFT, RIGHT, UP
 from snake.engine import Game, Player
 from snake.renderer import Renderer
+from snake.state import RandomApple, Snake
 from snake.utils import get_random_color, get_squared_wall
 
-COLS = 30
-GAME_ROWS = 20
-WIDTH = COLS * GRID_SIZE
-GAME_HEIGHT = GAME_ROWS * GRID_SIZE
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
+
+DEBUG = True
+
+NCOLS = 30
+NROWS = 20
+GRID_SIZE = 20
+WIDTH = NCOLS * GRID_SIZE
+GAME_HEIGHT = NROWS * GRID_SIZE
 
 FPS = 15
-NPLAYERS = 1
+NPLAYERS = 3
 
 SCORE_HEIGHT = 100
 
@@ -41,12 +50,19 @@ class HumanController:
                 return direction
 
 
-def init_game(width: int, height: int) -> Game:
-    color = get_random_color()
-    controller = HumanController()
-    player = Player(color, controller)
-    wall = get_squared_wall(width, height, GRID_SIZE)
-    return Game(width, height, player, wall, color)
+def init_games() -> Game:
+    wall = get_squared_wall(NCOLS, NROWS)
+    games = []
+    for idx in range(NPLAYERS):
+        color = get_random_color()
+        controller = HumanController()
+        player = Player(color, controller, name=str(idx + 1))
+        snake = Snake(color)
+        apple = RandomApple(color)
+        game = Game(NCOLS, NROWS, player, wall, snake, apple)
+        games.append(game)
+
+    return games
 
 
 def main():
@@ -63,37 +79,45 @@ def main():
     score_rect = pygame.Rect(0, GAME_HEIGHT, WIDTH, SCORE_HEIGHT)
     score_surf = win.subsurface(score_rect)
 
-    game = init_game(WIDTH, GAME_HEIGHT)
+    games = init_games()
     renderer = Renderer(
         game_surf,
         score_surf,
+        NCOLS,
+        NROWS,
+        GRID_SIZE,
         rect_radius=int(GRID_SIZE / 4),
-        line_width=1,
-        font_size=10,
+        line_width=2,
+        font_size=14,
     )
-    renderer.render_frame([game], debug=True)
+    renderer.render_frame(games, debug=DEBUG)
 
     while True:
         event = pygame.event.wait()
+
+        if event.type in [pygame.QUIT]:
+            pygame.quit()
 
         if event.type in [pygame.KEYDOWN]:
             break
 
     # game loop
-    running = True
-    while running:
+    while True:
         clock.tick(FPS)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
 
-        direction = game.player.controller.set_dir()
-        game.move(direction)
-        game.eval_state()
+        for game in games:
+            direction = game.player.controller.set_dir()
+            game.move(direction)
+            game.eval_state()
 
-        renderer.render_frame([game])
-        running = game.active
+        renderer.render_frame(games)
+
+        if all(game.active is False for game in games):
+            break
 
     while True:
         event = pygame.event.wait()

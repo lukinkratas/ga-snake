@@ -1,21 +1,32 @@
-- [ ] implement Generative Algortihms
-- [ ] numpy array chess board like logic?
-- [ ] directions enum
-- [ ] docker like names
-- [ ] ROWS -> NROWS, COLS -> NCOLS
-- [ ] fix turning animation (in case snake goes diagonal)
-- [ ] logging
-- [ ] eye dot to distinguish head, xs in case of death
-- [ ] add deatch reason?
-- [ ] render wall tech debt
-- [ ] steps as fitness
-- [ ] apple reset - exlcude by default snake init pos (class atr)
-- [ ] merge danger wall and danger vody per direction 10,4 -> 6,4
-- [ ] merge genome and GA Controller classes?
-- [ ] add matplotlib live plot
-- [ ] is player class even needed?
-- [ ] humaxn x ga window setup - diff grid size, win and scoreboard dims.
-- [ ] apple center
+- [ ] score num on the apple?
+- [x] Apple -> RandomApple / DeterministicApple
+- [ ] games startgin with 1 frame delay
+- [ ] upto 3 human players with diff controls
+- [ ] active -> is_active
+- [x] punish rotating in only 4-16 cells
+- [x] genome as arr
+- [x] improve apple placement -> set allowed coords once, instead of begging for forgivness / instead of exclude
+- [x] collision check perf improvement O(n) -> O(1) via set/tuple + in instead of list comp -> class coords?
 - [ ] init_render()
-- [ ] parametrize grid size
+- [x] get rid of long names
+- [ ] add matplotlib live plot
+
+- [x] implement Generative Algortihms
+- [x] numpy array chess board like logic?
+- [x] directions enum
+- [x] docker like names
+- [x] ROWS -> NROWS, COLS -> NCOLS
+- [ ] fix turning animation (in case snake goes diagonal)
+- [x] logging
+- [ ] eye dot to distinguish head, xs in case of death
+- [ ] add death reason?
+- [ ] render wall tech debt
+- [x] steps as fitness
+- [x] merge danger wall and danger vody per direction 10,4 -> 6,4
+- [ ] merge genome and GA Controller classes?
+- [ ] is player class even needed?
+- [x] parametrize grid size
+- [x] humaxn x ga window setup - diff grid size, win and scoreboard dims.
+- [ ] apple center
 - [ ] q for exit, r for reset in play
+- [ ] game.name attr instead of genome / player, etc.?

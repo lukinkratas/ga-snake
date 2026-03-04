@@ -1,52 +1,76 @@
+import logging
 import random
+from abc import ABC, abstractmethod
 from collections import deque
 
 import numpy as np
-import pygame
 
-from .const import GRID_SIZE, LEFT, RIGHT
+from .const import LEFT, RIGHT
 
-
-def get_rect(coords: np.ndarray):
-    return pygame.Rect(*coords, GRID_SIZE, GRID_SIZE)
+logger = logging.getLogger(__name__)
 
 
-class Apple:
-    def __init__(
-        self,
-        color: tuple[int],
-        available_coords: list[np.ndarray],
-        exclude_coords: list[np.ndarray],
-    ):
+class Apple(ABC):
+    def __init__(self, color: tuple[int]):
         self.color = color
-        self.available_coords = available_coords
-        self.reset(exclude_coords)
 
-    def reset(self, exclude_coords: list[np.ndarray]):
-        self.move(exclude_coords)
+    @abstractmethod
+    def reset(self):
+        pass
 
-    def move(self, exclude_coords: list[np.ndarray]):
+    @abstractmethod
+    def move(self):
+        pass
 
-        while True:
-            new_coords = random.choice(self.available_coords)
-            if not any(np.array_equal(new_coords, c) for c in exclude_coords):
-                break
 
-            print("Re-arranging apple.")
+class RandomApple(Apple):
+    INIT_COORDS = np.array([20, 10])
 
-        self.coords = new_coords
+    def __init__(self, color: tuple[int]):
+        super().__init__(color)
+        self.reset()
 
-    @property
-    def rect(self):
-        return get_rect(self.coords)
+    def reset(self):
+        self.coords = self.INIT_COORDS.copy()
+
+    def move(self, coords_choice: list[np.ndarray]):
+        self.coords = random.choice(coords_choice)
+
+
+class DeterministicApple(Apple):
+    COORDS = [
+        np.array([20, 10]),
+        np.array([20, 15]),
+        np.array([10, 15]),
+        np.array([10, 5]),
+        np.array([20, 5]),
+        np.array([27, 17]),
+        np.array([2, 17]),
+        np.array([2, 2]),
+        np.array([27, 2]),
+        np.array([28, 18]),
+        np.array([1, 18]),
+        np.array([1, 1]),
+        np.array([28, 1]),
+    ]
+
+    def __init__(self, color: tuple[int]):
+        super().__init__(color)
+        self.reset()
+
+    def reset(self):
+        self.move(0)
+
+    def move(self, idx: int):
+        self.coords = self.COORDS[idx]
 
 
 class Snake:
-    INIT_HEAD_COORDS = GRID_SIZE * np.array([10, 10])
+    INIT_HEAD_COORDS = np.array([10, 10])
     INIT_COORDS = [
         INIT_HEAD_COORDS,
-        INIT_HEAD_COORDS + GRID_SIZE * LEFT,
-        INIT_HEAD_COORDS + 2 * GRID_SIZE * LEFT,
+        INIT_HEAD_COORDS + LEFT,
+        INIT_HEAD_COORDS + 2 * LEFT,
     ]
 
     def __init__(self, color: tuple[int]):
@@ -59,24 +83,6 @@ class Snake:
         self.dirs_q = deque([self.head_dir, RIGHT, RIGHT])
 
     @property
-    def rects(self):
-        return [get_rect(c) for c in self.coords]
-
-    # @property
-    # def head_pos(self):
-    #     return self.head_rect.topleft
-
-    @property
-    def head_rect(self):
-        # Used for rendering
-        return self.rects[0]
-
-    @property
-    def body_rects(self):
-        # Used for rendering
-        return self.rects[1:]
-
-    @property
     def head_coords(self) -> np.ndarray:
         return self.coords[0]
 
@@ -86,6 +92,7 @@ class Snake:
 
     @property
     def tail_coords(self):
+        # Used for extending
         return self.coords[-1]
 
     @property
@@ -102,10 +109,10 @@ class Snake:
         self.dirs_q.pop()
 
         for c, direction in zip(self.coords, self.dirs_q):
-            c += direction * GRID_SIZE
+            c += direction
 
     def extend(self):
-        self.coords.append(self.tail_coords.copy() - self.tail_dir * GRID_SIZE)
+        self.coords.append(self.tail_coords.copy() - self.tail_dir)
         self.dirs_q.append(self.tail_dir)
 
 
@@ -113,7 +120,3 @@ class Wall:
     def __init__(self, coords: list[np.ndarray]):
         self.color = tuple(50 * np.ones(3))
         self.coords = coords
-
-    @property
-    def rects(self):
-        return [get_rect(c) for c in self.coords]
