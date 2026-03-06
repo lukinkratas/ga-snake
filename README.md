@@ -6,11 +6,11 @@
 uv run play.py
 ```
 
-![play](doc/ga.png)
+![play](doc/play.png)
 
 ### GA Train
 
 ```bash
 uv run ga_train.py
 ```
-![ga-train](doc/ga_traing.png)
+![ga-train](doc/ga_train.png)
