@@ -46,3 +46,4 @@
 - [ ] add eye dots to distinguish head, xs in case of death
 - [ ] add death reason
 - [ ] score num on the apple?
+- [ ] q learning
