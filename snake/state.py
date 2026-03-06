@@ -38,7 +38,7 @@ class RandomApple(Apple):
 
 
 class DeterministicApple(Apple):
-    COORDS = [
+    _COORDS = [
         np.array([20, 10]),
         np.array([20, 15]),
         np.array([10, 15]),
@@ -59,10 +59,14 @@ class DeterministicApple(Apple):
         self.reset()
 
     def reset(self):
-        self.move(0)
+        self.idx = 0
 
-    def move(self, idx: int):
-        self.coords = self.COORDS[idx]
+    def move(self):
+        self.idx += 1
+
+    @property
+    def coords(self):
+        return self._COORDS[self.idx]
 
 
 class Snake:

@@ -1,10 +1,8 @@
 import logging
 
-import numpy as np
 import pygame
 
-from snake.const import DOWN, LEFT, RIGHT, UP
-from snake.engine import Game, Player
+from snake.engine import Game, HumanController, HumanGame, Player
 from snake.renderer import Renderer
 from snake.state import RandomApple, Snake
 from snake.utils import get_random_color, get_squared_wall
@@ -18,36 +16,10 @@ NCOLS = 30
 NROWS = 20
 GRID_SIZE = 20
 WIDTH = NCOLS * GRID_SIZE
-GAME_HEIGHT = NROWS * GRID_SIZE
+HEIGHT = NROWS * GRID_SIZE
 
-FPS = 15
+FPS = 1
 NPLAYERS = 3
-
-SCORE_HEIGHT = 100
-
-
-class HumanController:
-    def set_dir(self) -> np.ndarray | None:
-        keymap = {
-            pygame.K_LEFT: LEFT,
-            pygame.K_h: LEFT,
-            pygame.K_a: LEFT,
-            pygame.K_RIGHT: RIGHT,
-            pygame.K_l: RIGHT,
-            pygame.K_d: RIGHT,
-            pygame.K_UP: UP,
-            pygame.K_k: UP,
-            pygame.K_w: UP,
-            pygame.K_DOWN: DOWN,
-            pygame.K_j: DOWN,
-            pygame.K_s: DOWN,
-        }
-
-        keys = pygame.key.get_pressed()
-
-        for key, direction in keymap.items():
-            if keys[key]:
-                return direction
 
 
 def init_games() -> Game:
@@ -59,7 +31,7 @@ def init_games() -> Game:
         player = Player(color, controller, name=str(idx + 1))
         snake = Snake(color)
         apple = RandomApple(color)
-        game = Game(NCOLS, NROWS, player, wall, snake, apple)
+        game = HumanGame(NCOLS, NROWS, player, wall, snake, apple)
         games.append(game)
 
     return games
@@ -68,15 +40,17 @@ def init_games() -> Game:
 def main():
     pygame.init()
 
-    win = pygame.display.set_mode(size=(WIDTH, GAME_HEIGHT + SCORE_HEIGHT))
+    scoreboard_row_size = 20
+    score_height = (NPLAYERS + 3) * scoreboard_row_size
+    win = pygame.display.set_mode(size=(WIDTH, HEIGHT + score_height))
     pygame.display.set_caption("Snake")
 
     clock = pygame.time.Clock()
 
-    game_rect = pygame.Rect(0, 0, WIDTH, GAME_HEIGHT)
+    game_rect = pygame.Rect(0, 0, WIDTH, HEIGHT)
     game_surf = win.subsurface(game_rect)
 
-    score_rect = pygame.Rect(0, GAME_HEIGHT, WIDTH, SCORE_HEIGHT)
+    score_rect = pygame.Rect(0, HEIGHT, WIDTH, score_height)
     score_surf = win.subsurface(score_rect)
 
     games = init_games()
@@ -89,8 +63,13 @@ def main():
         rect_radius=int(GRID_SIZE / 4),
         line_width=2,
         font_size=14,
+        scoreboard_row_size=scoreboard_row_size,
     )
-    renderer.render_frame(games, debug=DEBUG)
+    renderer.render_games(games)
+    renderer.render_scoreboard(games)
+    if DEBUG:
+        renderer.render_coords()
+    pygame.display.update()
 
     while True:
         event = pygame.event.wait()
@@ -110,11 +89,14 @@ def main():
                 pygame.quit()
 
         for game in games:
-            direction = game.player.controller.set_dir()
-            game.move(direction)
-            game.eval_state()
+            if game.active is False:
+                continue
 
-        renderer.render_frame(games)
+            game.step()
+
+        renderer.render_games(games)
+        renderer.render_scoreboard(games)
+        pygame.display.update()
 
         if all(game.active is False for game in games):
             break

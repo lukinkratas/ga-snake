@@ -8,4 +8,5 @@ dependencies = [
     "numpy>=2.4.2",
     "pygad>=3.5.0",
     "pygame>=2.6.1",
+    "pygame-matplotlib>=0.5",
 ]

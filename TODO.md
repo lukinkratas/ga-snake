@@ -1,15 +1,29 @@
-- [ ] score num on the apple?
-- [x] Apple -> RandomApple / DeterministicApple
-- [ ] games startgin with 1 frame delay
-- [ ] upto 3 human players with diff controls
+- [x] move GAGame and HumanGame to engine
+- [x] extend to 80 genomes - scoreboard two vertical halves
+- [x] reward heading the same direction as diff between apples
+- [x] controller keys per human player in scoreboard
+- [x] game.score x game.player.score?
+- [ ] plot - add padding, x axis always int, yaxis always float
+- [ ] games starting with 1 frame delay
 - [ ] active -> is_active
+- [ ] human games starting separately.
+- [ ] q for exit, r for reset in play
+- [x] doc pics
+- [x] refresh screen into play/train
+- [x] upto 3 human players with diff controls
+- [x] Apple -> RandomApple / DeterministicApple
 - [x] punish rotating in only 4-16 cells
 - [x] genome as arr
 - [x] improve apple placement -> set allowed coords once, instead of begging for forgivness / instead of exclude
 - [x] collision check perf improvement O(n) -> O(1) via set/tuple + in instead of list comp -> class coords?
-- [ ] init_render()
+- [ ] init_render() ?
 - [x] get rid of long names
-- [ ] add matplotlib live plot
+- [x] add matplotlib live plot
+- [x] GAGame class? -> differ in step()i
+- [ ] GAPlayer class instead of Player -> Controller?
+- [x] if players lt 5: score below, if gt 5: right + bottom matplotlib
+- [ ] coords_stepped from game to game.snake ? and game.steps to snake?
+- [ ] lint
 
 - [x] implement Generative Algortihms
 - [x] numpy array chess board like logic?
@@ -28,5 +42,7 @@
 - [x] parametrize grid size
 - [x] humaxn x ga window setup - diff grid size, win and scoreboard dims.
 - [ ] apple center
-- [ ] q for exit, r for reset in play
 - [ ] game.name attr instead of genome / player, etc.?
+- [ ] add eye dots to distinguish head, xs in case of death
+- [ ] add death reason
+- [ ] score num on the apple?
