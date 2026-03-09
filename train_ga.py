@@ -25,7 +25,7 @@ GRID_SIZE = 15
 WIDTH = NCOLS * GRID_SIZE
 HEIGHT = NROWS * GRID_SIZE
 
-FPS = 120
+FPS = 60
 POP_SIZE = 120
 NGENS = 1000
 # limit number of steps per game
@@ -40,18 +40,16 @@ def init_genomes(size: int) -> list[np.ndarray]:
 
     Returns: list of genomes
     """
+    genomes = []
     best_genome_path = Path("best_genome.npy")
     if best_genome_path.exists():
         logger.debug("Last best genome found.")
-        last_best_genome = np.load(best_genome_path)
-        genomes = [last_best_genome]
-        rest_size = size - 1
+        genomes.append(np.load(best_genome_path))
+        remaining_size = size - 1
     else:
-        genomes = []
-        rest_size = size
+        remaining_size = size
 
-    rest_genomes = [rng.choice([-0.1, 0.1], (8, 4)) for _ in range(rest_size)]
-    genomes.extend(rest_genomes)
+    genomes.extend(rng.uniform(-1.0, 1.0, size=(remaining_size, 8, 4)))
     return genomes
 
 
@@ -274,7 +272,7 @@ def main() -> None:
     plot_height = 305
 
     win = pygame.display.set_mode(size=(WIDTH + score_width, HEIGHT + plot_height))
-    pygame.display.set_caption("Snake")
+    pygame.display.set_caption("Snake - GA Training")
 
     clock = pygame.time.Clock()
 

@@ -1,8 +1,10 @@
 import logging
+from pathlib import Path
 
+import numpy as np
 import pygame
 
-from snake.engine import HumanController, HumanGame, Player
+from snake.engine import GAController, GAGame, Player
 from snake.renderer import Renderer
 from snake.state import RandomApple, Snake
 from snake.utils import get_random_color, get_squared_wall
@@ -22,44 +24,58 @@ FPS = 15
 NPLAYERS = 3
 
 
-def init_games() -> list[HumanGame]:
+def init_genomes() -> list[np.ndarray]:
+    """Initialize genomes.
+
+    Args:
+        size: length of returned list of genomes
+
+    Returns: list of genomes
+    """
+    best_genome_path = Path("best_genome.npy")
+    last_best_genome = np.load(best_genome_path)
+    return [last_best_genome]
+
+
+def init_games(genomes: list[np.ndarray]) -> list[GAGame]:
     """Initialize games with it's assets - player, controller, wall, snake and apple.
+
+    Args:
+        genomes: list of genomes
 
     Returns: list of games
     """
+    # common wall for all games
     wall = get_squared_wall(NCOLS, NROWS)
     games = []
-    for idx in range(NPLAYERS):
+    for idx, genome in enumerate(genomes, start=1):
         color = get_random_color()
-        controller = HumanController()
-        player = Player(color, controller, name=str(idx + 1))
+        controller = GAController(NCOLS, NROWS, genome)
+        player = Player(color, controller, name=f"G{idx}")
         snake = Snake(color)
         apple = RandomApple(color)
-        game = HumanGame(NCOLS, NROWS, player, wall, snake, apple)
+        game = GAGame(NCOLS, NROWS, player, wall, snake, apple)
         games.append(game)
 
     return games
 
 
-def start_games(games: list[HumanGame]) -> None:
+def start_games(games: list[GAGame]) -> None:
     """Start games from list.
 
     Args:
         games: list of games
     """
-    keys = pygame.key.get_pressed()
     for game in games:
-        if game.has_started is False and any(
-            keys[k] for k in game.player.controller.keymap.keys()
-        ):
-            game.has_started = True
+        game.has_started = True
 
 
-def reset_games(games: list[HumanGame]) -> None:
+def reset_games(games: list[GAGame]) -> None:
     """Reset games from list and set new GA controllers from list.
 
     Args:
         games: list of games
+        genomes: list of genomes (arrays)
     """
     for game in games:
         game.reset()
@@ -86,7 +102,8 @@ def main() -> None:
     score_rect = pygame.Rect(0, HEIGHT, WIDTH, score_height)
     score_surf = win.subsurface(score_rect)
 
-    games = init_games()
+    genomes = init_genomes()
+    games = init_games(genomes)
     renderer = Renderer(
         game_surf,
         score_surf,
@@ -102,6 +119,8 @@ def main() -> None:
     renderer.render_games(games)
     renderer.render_scoreboard(games)
     pygame.display.update()
+
+    pygame.time.delay(1000)
 
     # game loop
     is_running = True

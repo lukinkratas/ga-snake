@@ -1,5 +1,5 @@
+- [ ] lint
 - [x] init_render() ? -> Not really needed
-- [x] lint
 - [x] is_alive to snake?
 - [x] coords_stepped from game to game.snake ? and game.steps to snake? -> Nope, just a GAGame attr. and not HumanGame
 - [x] GAPlayer class instead of Player -> Controller? -> Nope, bcs of train_ga.reset woudl require new player instead of only new controller

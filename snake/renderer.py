@@ -345,10 +345,13 @@ class Renderer:
             rect: rectangle object
         """
         text = "Player"
+
         if game.player.name is not None:
             text += f" {game.player.name}"
+
         if isinstance(game.player.controller, HumanController) and game.steps == 0:
             text += f" (use {game.player.controller.keymap_name})"
+
         text += f", score: {game.player.score} steps: {game.steps}"
 
         if game.is_over:

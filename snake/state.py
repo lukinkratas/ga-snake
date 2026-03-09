@@ -44,24 +44,30 @@ class RandomApple(AppleBase):
 class DeterministicApple(AppleBase):
     _COORDS = [
         np.array([20, 10]),
+        # every corner, dist 4, clockwise
         np.array([20, 15]),
         np.array([10, 15]),
         np.array([10, 5]),
         np.array([20, 5]),
-        np.array([27, 17]),
-        np.array([2, 17]),
-        np.array([2, 2]),
-        np.array([27, 2]),
+        # mid of wall, dist 1, clockwise
+        np.array([27, 10]),
+        np.array([15, 17]),
+        np.array([2, 10]),
+        np.array([15, 2]),
+        # every corner, clockwise
         np.array([28, 18]),
         np.array([1, 18]),
         np.array([1, 1]),
         np.array([28, 1]),
+        # mid of wall, anti-clockwise
+        np.array([1, 10]),
+        np.array([15, 18]),
+        np.array([28, 10]),
+        np.array([15, 1]),
+        # mid
         np.array([15, 10]),
-        np.array([1, 1]),
-        np.array([1, 18]),
-        np.array([28, 18]),
-        np.array([28, 1]),
-        np.array([15, 10]),
+        np.array([14, 10]),
+        np.array([16, 10]),
     ]
 
     def __init__(self, color: tuple[int, int, int]) -> None:
