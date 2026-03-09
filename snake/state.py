@@ -10,34 +10,38 @@ from .const import LEFT, RIGHT
 logger = logging.getLogger(__name__)
 
 
-class Apple(ABC):
-    def __init__(self, color: tuple[int]):
+class AppleBase(ABC):
+    def __init__(self, color: tuple[int, int, int]) -> None:
         self.color = color
 
     @abstractmethod
-    def reset(self):
+    def reset(self) -> None:
+        """Reset the apple to default position."""
         pass
 
     @abstractmethod
-    def move(self):
+    def move(self) -> None:
+        """Move apple to new position."""
         pass
 
 
-class RandomApple(Apple):
+class RandomApple(AppleBase):
     INIT_COORDS = np.array([20, 10])
 
-    def __init__(self, color: tuple[int]):
+    def __init__(self, color: tuple[int, int, int]) -> None:
         super().__init__(color)
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
+        """Reset the apple to default position."""
         self.coords = self.INIT_COORDS.copy()
 
-    def move(self, coords_choice: list[np.ndarray]):
+    def move(self, coords_choice: list[np.ndarray]) -> None:
+        """Move apple to new position."""
         self.coords = random.choice(coords_choice)
 
 
-class DeterministicApple(Apple):
+class DeterministicApple(AppleBase):
     _COORDS = [
         np.array([20, 10]),
         np.array([20, 15]),
@@ -52,20 +56,29 @@ class DeterministicApple(Apple):
         np.array([1, 18]),
         np.array([1, 1]),
         np.array([28, 1]),
+        np.array([15, 10]),
+        np.array([1, 1]),
+        np.array([1, 18]),
+        np.array([28, 18]),
+        np.array([28, 1]),
+        np.array([15, 10]),
     ]
 
-    def __init__(self, color: tuple[int]):
+    def __init__(self, color: tuple[int, int, int]) -> None:
         super().__init__(color)
         self.reset()
 
-    def reset(self):
+    def reset(self) -> None:
+        """Reset the apple to default position."""
         self.idx = 0
 
-    def move(self):
+    def move(self) -> None:
+        """Move apple to new position."""
         self.idx += 1
 
     @property
-    def coords(self):
+    def coords(self) -> np.ndarray:
+        """Coordinates of an apple."""
         return self._COORDS[self.idx]
 
 
@@ -77,35 +90,43 @@ class Snake:
         INIT_HEAD_COORDS + 2 * LEFT,
     ]
 
-    def __init__(self, color: tuple[int]):
+    def __init__(self, color: tuple[int, int, int]) -> None:
         self.color = color
         self.reset()
 
     def reset(self) -> None:
+        """Reset snake to default position and direction."""
         self.coords = [c.copy() for c in self.INIT_COORDS]
         self.head_dir = RIGHT
         self.dirs_q = deque([self.head_dir, RIGHT, RIGHT])
+        self.is_alive = True
 
     @property
     def head_coords(self) -> np.ndarray:
+        """Coordinates of snake's head. Used for collision detection and rendering."""
         return self.coords[0]
 
     @property
     def body_coords(self) -> np.ndarray:
+        """Coordinates of snake's body. Used for collision detection and rendering."""
         return self.coords[1:]
 
     @property
-    def tail_coords(self):
-        # Used for extending
+    def tail_coords(self) -> np.ndarray:
+        """Coordinates of snake's tail. Used for extending."""
         return self.coords[-1]
 
     @property
-    def tail_dir(self):
-        # Used for extending
+    def tail_dir(self) -> np.ndarray:
+        """Direction of snake's tail. Used for extending."""
         return self.dirs_q[-1]
 
-    def move(self, direction: np.ndarray | None):
+    def move(self, direction: np.ndarray | None) -> None:
+        """Move the snake in direction.
 
+        Args:
+            direction: direction (array)
+        """
         if direction is not None:
             self.head_dir = direction
 
@@ -115,12 +136,13 @@ class Snake:
         for c, direction in zip(self.coords, self.dirs_q):
             c += direction
 
-    def extend(self):
+    def extend(self) -> None:
+        """Extend the snake."""
         self.coords.append(self.tail_coords.copy() - self.tail_dir)
         self.dirs_q.append(self.tail_dir)
 
 
 class Wall:
-    def __init__(self, coords: list[np.ndarray]):
+    def __init__(self, coords: list[np.ndarray]) -> None:
         self.color = tuple(50 * np.ones(3))
         self.coords = coords

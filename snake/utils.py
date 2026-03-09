@@ -2,13 +2,25 @@ import numpy as np
 
 from .state import Wall
 
+rng = np.random.default_rng(seed=42)
+
 
 def get_random_color() -> tuple[int, int, int]:
-    return tuple(np.random.randint(50, 200, size=3))
+    """Get random color.
+
+    Returns: RGB tuple
+    """
+    return tuple(rng.integers(50, 200, size=3))
 
 
-def get_squared_wall(ncols: int, nrows: int):
+def get_squared_wall(ncols: int, nrows: int) -> Wall:
+    """Get wall instance of square shape.
 
+    ncols: number of columns
+    nrows: number of rows
+
+    Returns: Wall instance
+    """
     x1 = np.arange(0, ncols)
     y1 = np.zeros(x1.shape)
 

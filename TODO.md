@@ -1,13 +1,20 @@
+- [x] init_render() ? -> Not really needed
+- [x] lint
+- [x] is_alive to snake?
+- [x] coords_stepped from game to game.snake ? and game.steps to snake? -> Nope, just a GAGame attr. and not HumanGame
+- [x] GAPlayer class instead of Player -> Controller? -> Nope, bcs of train_ga.reset woudl require new player instead of only new controller
+- [x] human games starting separately.
+- [x] q for exit, r for reset in play
+- [x] active -> is_alive
+- [x] p for pause game - GAGame and HumanGame
+- [x] screen records
+- [x] split deps
+- [x] store best genome
 - [x] move GAGame and HumanGame to engine
 - [x] extend to 80 genomes - scoreboard two vertical halves
 - [x] reward heading the same direction as diff between apples
 - [x] controller keys per human player in scoreboard
 - [x] game.score x game.player.score?
-- [ ] plot - add padding, x axis always int, yaxis always float
-- [ ] games starting with 1 frame delay
-- [ ] active -> is_active
-- [ ] human games starting separately.
-- [ ] q for exit, r for reset in play
 - [x] doc pics
 - [x] refresh screen into play/train
 - [x] upto 3 human players with diff controls
@@ -16,34 +23,24 @@
 - [x] genome as arr
 - [x] improve apple placement -> set allowed coords once, instead of begging for forgivness / instead of exclude
 - [x] collision check perf improvement O(n) -> O(1) via set/tuple + in instead of list comp -> class coords?
-- [ ] init_render() ?
 - [x] get rid of long names
 - [x] add matplotlib live plot
 - [x] GAGame class? -> differ in step()i
-- [ ] GAPlayer class instead of Player -> Controller?
 - [x] if players lt 5: score below, if gt 5: right + bottom matplotlib
-- [ ] coords_stepped from game to game.snake ? and game.steps to snake?
-- [ ] lint
 
 - [x] implement Generative Algortihms
 - [x] numpy array chess board like logic?
 - [x] directions enum
 - [x] docker like names
 - [x] ROWS -> NROWS, COLS -> NCOLS
-- [ ] fix turning animation (in case snake goes diagonal)
 - [x] logging
-- [ ] eye dot to distinguish head, xs in case of death
-- [ ] add death reason?
-- [ ] render wall tech debt
 - [x] steps as fitness
 - [x] merge danger wall and danger vody per direction 10,4 -> 6,4
-- [ ] merge genome and GA Controller classes?
-- [ ] is player class even needed?
 - [x] parametrize grid size
 - [x] humaxn x ga window setup - diff grid size, win and scoreboard dims.
-- [ ] apple center
-- [ ] game.name attr instead of genome / player, etc.?
-- [ ] add eye dots to distinguish head, xs in case of death
-- [ ] add death reason
-- [ ] score num on the apple?
+- [x] plot - x axis always int, yaxis always float
+- [ ] render eyes dots to distinguish head, xs in case of death ?
+- [ ] render score num on the apple ?
+- [ ] center apple in train_ga
 - [ ] q learning
+- [ ] plot - add padding

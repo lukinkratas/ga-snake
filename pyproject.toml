@@ -6,7 +6,50 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.4.2",
-    "pygad>=3.5.0",
     "pygame>=2.6.1",
-    "pygame-matplotlib>=0.5",
 ]
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "ruff>=0.15.5",
+]
+ga = [
+    "matplotlib>=3.10.8",
+    "opencv-python>=4.13.0.92",
+    "pygame-matplotlib>=0.5",
+    "pygame-screen-record>=0.1.1",
+]
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+extend-select = [
+    "E501", # line too long
+    "N",    # PEP8 naming
+    "R",    # RSE - flake8 raise, RET - flake8 return, RUF - ruff specific
+    "I",    # isort
+    # "C901", # mccabe - complexity
+    "PD",   # pandas
+    "NPY",  # numpy
+    "D"     # pydocstyle
+]
+ignore = [
+    "D100", # missing docstring in public module
+    "D101", # missing docstring in public class
+    "D104", # missing docstring in public package
+    "D107", # missing docstring in __init__
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+indent-style = "space"
+
+[tool.mypy]
+strict = true
+explicit_package_bases = true
+ignore_missing_imports = true
+disable_error_code = ["no-any-return", "union-attr", "misc"]

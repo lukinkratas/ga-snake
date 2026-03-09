@@ -2,7 +2,7 @@ import logging
 
 import pygame
 
-from snake.engine import Game, HumanController, HumanGame, Player
+from snake.engine import HumanController, HumanGame, Player
 from snake.renderer import Renderer
 from snake.state import RandomApple, Snake
 from snake.utils import get_random_color, get_squared_wall
@@ -18,11 +18,15 @@ GRID_SIZE = 20
 WIDTH = NCOLS * GRID_SIZE
 HEIGHT = NROWS * GRID_SIZE
 
-FPS = 1
+FPS = 15
 NPLAYERS = 3
 
 
-def init_games() -> Game:
+def init_games() -> list[HumanGame]:
+    """Initialize games with it's assets - player, controller, wall, snake and apple.
+
+    Returns: list of games
+    """
     wall = get_squared_wall(NCOLS, NROWS)
     games = []
     for idx in range(NPLAYERS):
@@ -37,7 +41,37 @@ def init_games() -> Game:
     return games
 
 
-def main():
+def start_games(games: list[HumanGame]) -> None:
+    """Start games from list.
+
+    Args:
+        games: list of games
+    """
+    keys = pygame.key.get_pressed()
+    for game in games:
+        if game.has_started is False and any(
+            keys[k] for k in game.player.controller.keymap.keys()
+        ):
+            game.has_started = True
+
+
+def reset_games(games: list[HumanGame]) -> None:
+    """Reset games from list and set new GA controllers from list.
+
+    Args:
+        games: list of games
+        genomes: list of genomes (arrays)
+    """
+    for game in games:
+        game.reset()
+
+
+def main() -> None:
+    """Main human play function.
+
+    Inits games.
+    Renders frames of all games of all generations.
+    """
     pygame.init()
 
     scoreboard_row_size = 20
@@ -65,47 +99,48 @@ def main():
         font_size=14,
         scoreboard_row_size=scoreboard_row_size,
     )
+
     renderer.render_games(games)
     renderer.render_scoreboard(games)
-    if DEBUG:
-        renderer.render_coords()
     pygame.display.update()
 
-    while True:
-        event = pygame.event.wait()
-
-        if event.type in [pygame.QUIT]:
-            pygame.quit()
-
-        if event.type in [pygame.KEYDOWN]:
-            break
-
     # game loop
-    while True:
+    is_running = True
+    is_paused = False
+    while is_running:
         clock.tick(FPS)
+
+        start_games(games)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
+                is_running = False
 
-        for game in games:
-            if game.active is False:
-                continue
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    is_paused = not is_paused
 
-            game.step()
+                if event.key == pygame.K_q:
+                    is_running = False
 
-        renderer.render_games(games)
-        renderer.render_scoreboard(games)
+                if event.key == pygame.K_r and all(game.is_over for game in games):
+                    reset_games(games)
+
+        if not is_paused:
+            for game in games:
+                if game.has_started is False or game.is_over:
+                    continue
+
+                game.step()
+
+            renderer.render_games(games)
+            renderer.render_scoreboard(games)
+
+        if is_paused and DEBUG:
+            renderer.render_coords()
+        if is_paused:
+            renderer.render_paused()
         pygame.display.update()
-
-        if all(game.active is False for game in games):
-            break
-
-    while True:
-        event = pygame.event.wait()
-
-        if event.type in [pygame.QUIT, pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN]:
-            break
 
     pygame.quit()
 
