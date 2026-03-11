@@ -17,12 +17,12 @@ class AppleBase(ABC):
     @abstractmethod
     def reset(self) -> None:
         """Reset the apple to default position."""
-        pass
+        self.idx = 0
 
     @abstractmethod
     def move(self) -> None:
         """Move apple to new position."""
-        pass
+        self.idx += 1
 
 
 class RandomApple(AppleBase):
@@ -35,10 +35,12 @@ class RandomApple(AppleBase):
     def reset(self) -> None:
         """Reset the apple to default position."""
         self.coords = self.INIT_COORDS.copy()
+        super().reset()
 
     def move(self, coords_choice: list[np.ndarray]) -> None:
         """Move apple to new position."""
         self.coords = random.choice(coords_choice)
+        super().move()
 
 
 class DeterministicApple(AppleBase):
@@ -76,11 +78,11 @@ class DeterministicApple(AppleBase):
 
     def reset(self) -> None:
         """Reset the apple to default position."""
-        self.idx = 0
+        super().reset()
 
     def move(self) -> None:
         """Move apple to new position."""
-        self.idx += 1
+        super().move()
 
     @property
     def coords(self) -> np.ndarray:

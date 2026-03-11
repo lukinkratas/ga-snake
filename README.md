@@ -14,7 +14,7 @@ uv run play.py
 ```bash
 uv run --group ga train_ga.py
 ```
-- 120 genomes
+- 160 genomes
 - 8x4 matrix controlled
 - 8 features: rel. distance to danger in each direction, rel. distance to apple in each direction
 

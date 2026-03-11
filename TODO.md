@@ -1,4 +1,7 @@
+- [ ] frames continue even after pause
 - [ ] lint
+- [x] render snake names on the head
+- [x] render apple idxs
 - [x] init_render() ? -> Not really needed
 - [x] is_alive to snake?
 - [x] coords_stepped from game to game.snake ? and game.steps to snake? -> Nope, just a GAGame attr. and not HumanGame
@@ -40,7 +43,6 @@
 - [x] humaxn x ga window setup - diff grid size, win and scoreboard dims.
 - [x] plot - x axis always int, yaxis always float
 - [ ] render eyes dots to distinguish head, xs in case of death ?
-- [ ] render score num on the apple ?
 - [ ] center apple in train_ga
 - [ ] q learning
 - [ ] plot - add padding

@@ -132,8 +132,13 @@ def main() -> None:
 
                 game.step()
 
-            renderer.render_games(games)
-            renderer.render_scoreboard(games)
+            sorted_games_desc = sorted(
+                games,
+                key=lambda g: (not g.is_over, g.player.score, g.steps),
+                reverse=True,
+            )
+            renderer.render_games(sorted_games_desc[::-1])
+            renderer.render_scoreboard(sorted_games_desc)
 
         if is_paused and DEBUG:
             renderer.render_coords()

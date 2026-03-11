@@ -15,8 +15,6 @@ from .const import (
 from .engine import GameBase, HumanController
 from .state import AppleBase, Snake, Wall
 
-ALPHA_MAP = {True: 255, False: 63}
-
 
 def render_circle(
     surf: pygame.Surface,
@@ -112,7 +110,7 @@ def render_text_on_rect(
     surf,
     text: str,
     font: pygame.Font,
-    font_color: tuple[int, int, int],
+    font_color: tuple[int, int, int, int],
     rect: pygame.Rect,
 ) -> None:
     """Render text on given rectangle.
@@ -204,88 +202,9 @@ class Renderer:
                 width=1,
             )
 
-    def render_wall(self, wall: Wall) -> None:
-        """Render wall on the screen.
-
-        Args:
-            wall: wall
-        """
-        for c in wall.coords:
-            render_rect(
-                surf=self.game_surf,
-                rect=self.get_square(c * self.grid_size),
-                color=wall.color,
-                line_color=(25, 25, 25, 255),
-                line_width=self.line_width,
-                radius=self.rect_radius,
-            )
-
-    def render_apple(self, apple: AppleBase, active: bool) -> None:
-        """Render apple on the screen.
-
-        Args:
-            apple: apple
-            active: whether or not is the apple active (affects opacity)
-        """
-        alpha = ALPHA_MAP[active]
-        render_circle(
-            surf=self.game_surf,
-            rect=self.get_square(apple.coords * self.grid_size),
-            color=(*apple.color, alpha),
-            line_color=(25, 25, 25, alpha),
-            line_width=self.line_width,
-            radius=int(0.8 * self.grid_size / 2),
-        )
-
-    def render_snake(self, snake: Snake) -> None:
-        """Render snake on the screen.
-
-        Args:
-            snake: snake
-        """
-        extra_radius = 10
-        alpha = ALPHA_MAP[snake.is_alive]
-        common_kwargs = {
-            "surf": self.game_surf,
-            "color": (*snake.color, alpha),
-            "line_color": (50, 50, 50, alpha),
-            "line_width": self.line_width,
-            "radius": self.rect_radius,
-        }
-
-        # draw head
-        head_kwargs_map = {
-            tuple(RIGHT): {
-                "border_top_right_radius": extra_radius,
-                "border_bottom_right_radius": extra_radius,
-            },
-            tuple(LEFT): {
-                "border_top_left_radius": extra_radius,
-                "border_bottom_left_radius": extra_radius,
-            },
-            tuple(UP): {
-                "border_top_left_radius": extra_radius,
-                "border_top_right_radius": extra_radius,
-            },
-            tuple(DOWN): {
-                "border_bottom_left_radius": extra_radius,
-                "border_bottom_right_radius": extra_radius,
-            },
-        }
-        head_kwargs = head_kwargs_map[tuple(snake.head_dir)]
-        render_rect(
-            rect=self.get_square(snake.head_coords * self.grid_size),
-            **common_kwargs,
-            **head_kwargs,
-        )
-
-        # draw body
-        for c in snake.body_coords:
-            render_rect(rect=self.get_square(c * self.grid_size), **common_kwargs)
-
     def render_coords(self) -> None:
         """Render coordinates for debugging on the screen."""
-        color = (150,) * 3
+        color = (150, 150, 150, 255)
         font = pygame.font.SysFont("Arial", 8)
 
         x_range = np.arange(self.ncols)
@@ -311,8 +230,99 @@ class Renderer:
                 )
                 render_text_on_rect(self.game_surf, text, font, color, rect)
 
+    def render_wall(self, wall: Wall) -> None:
+        """Render wall on the screen.
+
+        Args:
+            wall: wall
+        """
+        for c in wall.coords:
+            render_rect(
+                surf=self.game_surf,
+                rect=self.get_square(c * self.grid_size),
+                color=(*wall.color, 255),
+                line_color=(25, 25, 25, 255),
+                line_width=self.line_width,
+                radius=self.rect_radius,
+            )
+
+    def render_apple(self, apple: AppleBase, alpha: int) -> None:
+        """Render apple on the screen.
+
+        Args:
+            apple: apple
+            active: whether or not is the apple active (affects opacity)
+        """
+        rect = self.get_square(apple.coords * self.grid_size)
+        render_circle(
+            surf=self.game_surf,
+            rect=rect,
+            color=(*apple.color, alpha),
+            line_color=(25, 25, 25, alpha),
+            line_width=self.line_width,
+            radius=int(0.8 * self.grid_size / 2),
+        )
+        render_text_on_rect(
+            surf=self.game_surf,
+            text=str(apple.idx + 1),
+            font=self.font,
+            font_color=(50, 50, 50, alpha),
+            rect=rect,
+        )
+
+    def render_snake(self, snake: Snake, alpha: int, name: str | None = None) -> None:
+        """Render snake on the screen.
+
+        Args:
+            snake: snake
+        """
+        extra_radius = 10
+        common_kwargs = {
+            "surf": self.game_surf,
+            "color": (*snake.color, alpha),
+            "line_color": (25, 25, 25, alpha),
+            "line_width": self.line_width,
+            "radius": self.rect_radius,
+        }
+
+        # draw body first
+        for c in snake.body_coords:
+            render_rect(rect=self.get_square(c * self.grid_size), **common_kwargs)
+
+        # draw head
+        head_kwargs_map = {
+            tuple(RIGHT): {
+                "border_top_right_radius": extra_radius,
+                "border_bottom_right_radius": extra_radius,
+            },
+            tuple(LEFT): {
+                "border_top_left_radius": extra_radius,
+                "border_bottom_left_radius": extra_radius,
+            },
+            tuple(UP): {
+                "border_top_left_radius": extra_radius,
+                "border_top_right_radius": extra_radius,
+            },
+            tuple(DOWN): {
+                "border_bottom_left_radius": extra_radius,
+                "border_bottom_right_radius": extra_radius,
+            },
+        }
+        head_kwargs = head_kwargs_map[tuple(snake.head_dir)]
+        head_rect = self.get_square(snake.head_coords * self.grid_size)
+        render_rect(rect=head_rect, **common_kwargs, **head_kwargs)
+
+        if name:
+            render_text_on_rect(
+                surf=self.game_surf,
+                text=name,
+                font=self.font,
+                font_color=(50, 50, 50, alpha),
+                rect=head_rect,
+            )
+
     def render_games(self, games: list[GameBase], gen: str | None = None) -> None:
-        """Render games and corresponding walls, snakesa and apples on the screen.
+        """Render games and corresponding walls, snakes and apples in given order on the screen.
 
         Args:
             games: list of games
@@ -327,17 +337,19 @@ class Renderer:
             self.render_wall(wall)
 
         # separate for loop, bcs I want the snakes to be visible on top of wall
-        # inactive games with lowest score render first
         # active games with highest score render last
-        sorted_games = sorted(
-            [game for game in games],
-            key=lambda g: (g.player.score, g.steps, not g.is_over),
-        )
-        for game in sorted_games:
-            self.render_snake(game.snake)
-            self.render_apple(game.apple, game.snake.is_alive)
+        alpha_map = {True: 155, False: 55}
+        for game in games[:-1]:
+            alpha = alpha_map[game.snake.is_alive]
+            self.render_snake(game.snake, alpha)
+            self.render_apple(game.apple, alpha)
 
-    def render_game_row(self, game: GameBase, rect: pygame.Rect) -> None:
+        best_game = games[-1]
+        alpha = 255
+        self.render_snake(best_game.snake, alpha, name=best_game.player.name)
+        self.render_apple(best_game.apple, alpha)
+
+    def render_player_row(self, game: GameBase, row_rect: pygame.Rect) -> None:
         """Render row per game/player in the scoreboard.
 
         Args:
@@ -352,7 +364,7 @@ class Renderer:
         if isinstance(game.player.controller, HumanController) and game.steps == 0:
             text += f" (use {game.player.controller.keymap_name})"
 
-        text += f", score: {game.player.score} steps: {game.steps}"
+        text += f", score: {game.player.score}"
 
         if game.is_over:
             text += " - GAME OVER"
@@ -361,8 +373,8 @@ class Renderer:
             surf=self.score_surf,
             text=text,
             font=self.font if game.is_over else self.font_bold,
-            font_color=game.player.color,
-            rect=rect,
+            font_color=(*game.player.color, 255),
+            rect=row_rect,
         )
 
     def render_scoreboard(self, games: list[GameBase], gen: str | None = None) -> None:
@@ -372,54 +384,53 @@ class Renderer:
             games: list of games
             gen: GA generation number (optional)
         """
-        font_color = (175,) * 3
+        font_color = (175, 175, 175, 255)
 
         if all(game.is_over for game in games):
             text = "Q to quit or R to reset."
         else:
             text = "Press P to pause, Q to quit."
 
-        rect = pygame.Rect(0, 0, self.score_surf.get_width(), self.scoreboard_row_size)
-        render_text_on_rect(self.score_surf, text, self.font, font_color, rect)
+        row_rect = pygame.Rect(
+            0, 0, self.score_surf.get_width(), self.scoreboard_row_size
+        )
+        render_text_on_rect(self.score_surf, text, self.font, font_color, row_rect)
 
         text = "Scoreboard"
 
         if gen is not None:
             text += f" gen: {gen}"
 
-        rect = pygame.Rect(
+        row_rect = pygame.Rect(
             0,
             self.scoreboard_row_size,
             self.score_surf.get_width(),
             self.scoreboard_row_size,
         )
-        render_text_on_rect(self.score_surf, text, self.font_bold, font_color, rect)
-
-        sorted_games = sorted(
-            [game for game in games],
-            key=lambda g: (g.player.score, g.steps, not g.is_over),
-            reverse=True,
-        )
+        render_text_on_rect(self.score_surf, text, self.font_bold, font_color, row_rect)
 
         available_height = self.score_surf.get_height()
         # count rows for player scores, 3 reserved for intructions, title and footer
         available_nrows = int(available_height / self.scoreboard_row_size) - 3
         # round up numbber of cols
         ncols = math.ceil((len(games) / available_nrows))
+
         y_offset = 2 * self.scoreboard_row_size
         for col_idx in range(ncols):
             from_idx = col_idx * available_nrows
             to_idx = (col_idx + 1) * available_nrows
-            for row_idx, game in enumerate(sorted_games[from_idx:to_idx]):
-                rect = pygame.Rect(
+            for row_idx, game in enumerate(games[from_idx:to_idx]):
+                row_rect = pygame.Rect(
                     col_idx * self.score_surf.get_width() / ncols,
                     y_offset + row_idx * self.scoreboard_row_size,
                     self.score_surf.get_width() / ncols,
                     self.scoreboard_row_size,
                 )
-                self.render_game_row(game, rect)
+                self.render_player_row(game, row_rect)
 
-    def render_plot(self, best_fitness_history: list[np.ndarray]) -> None:
+    def render_plot(
+        self, best_fitness_history: list[np.ndarray], avg_fitness_history: list
+    ) -> None:
         """Render matplotlib plot on the screen.
 
         Args:
@@ -428,11 +439,15 @@ class Renderer:
         ngens = len(best_fitness_history)
         self.ax.clear()
         xs = np.arange(1, ngens + 1, dtype=np.int16)
-        self.ax.bar(xs, best_fitness_history)
+        self.ax.bar(xs, best_fitness_history, label="max", color="tab:blue")
+        self.ax.plot(
+            xs, avg_fitness_history, label="avg", color="tab:orange", linewidth=2.0
+        )
 
-        self.ax.set_title("Best Fitness per Generation")
+        self.ax.set_title("Fitness per Generation")
         self.ax.set_xlabel("Generation")
         self.ax.set_ylabel("Fitness")
+        self.ax.legend(loc="upper left")
 
         # needed to invoke dtype on axis
         nx = np.linspace(0, ngens + 1, num=min(ngens + 2, 12), dtype=np.int16)
@@ -449,7 +464,7 @@ class Renderer:
 
     def render_paused(self) -> None:
         """Render paused on the screen."""
-        font_color = (25,) * 3
+        font_color = (25, 25, 25, 255)
         text = "|| P A U S E D"
         rect = pygame.Rect(
             int(self.grid_size * self.ncols * 0.1),

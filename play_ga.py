@@ -32,9 +32,10 @@ def init_genomes() -> list[np.ndarray]:
 
     Returns: list of genomes
     """
+    custom_genome = np.concatenate([0.8 * np.eye(4), 0.5 * np.eye(4)])
     best_genome_path = Path("best_genome.npy")
     last_best_genome = np.load(best_genome_path)
-    return [last_best_genome]
+    return [custom_genome, last_best_genome]
 
 
 def init_games(genomes: list[np.ndarray]) -> list[GAGame]:

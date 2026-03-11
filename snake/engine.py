@@ -80,7 +80,7 @@ class GAController:
         scores = features @ self.genome  # linear combination
         move_idx = np.argmax(scores)
 
-        directions = [UP, DOWN, LEFT, RIGHT]
+        directions = [RIGHT, LEFT, DOWN, UP]
         return directions[move_idx]
 
     def eval_state(self, snake: Snake, apple: AppleBase, wall: Wall) -> np.ndarray:
@@ -104,10 +104,10 @@ class GAController:
             - head_x
             - 1
         )
-        # No bodies rects found on the right
         wall_safety_right = (
             np.min(wall_right_rects_dists) / available_ncols
             if wall_right_rects_dists.size != 0
+            # No bodies rects found on the right
             else np.float64(1)
         )
 
@@ -220,14 +220,14 @@ class GAController:
 
         logger.debug(
             "features:"
-            f", {wall_safety_right=}"
-            f", {wall_safety_left=}"
-            f", {wall_safety_down=}"
-            f", {wall_safety_up=}"
-            f", {body_safety_right=}"
-            f", {body_safety_left=}"
-            f", {body_safety_down=}"
-            f", {body_safety_up=}"
+            # f", {wall_safety_right=}"
+            # f", {wall_safety_left=}"
+            # f", {wall_safety_down=}"
+            # f", {wall_safety_up=}"
+            # f", {body_safety_right=}"
+            # f", {body_safety_left=}"
+            # f", {body_safety_down=}"
+            # f", {body_safety_up=}"
             f", {safety_right=}"
             f", {safety_left=}"
             f", {safety_down=}"
@@ -239,14 +239,14 @@ class GAController:
         )
         return np.array(
             [
-                safety_left,
                 safety_right,
-                safety_up,
+                safety_left,
                 safety_down,
+                safety_up,
                 apple_right,
                 apple_left,
-                apple_up,
                 apple_down,
+                apple_up,
             ]
         )
 
@@ -378,7 +378,7 @@ class GAGame(GameBase):
     def reset(self) -> None:
         """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
         self.coords_stepped = []
-        self.dirs_to_apple = []
+        self.dirs_from_last_apple = [self.snake.head_dir]
         super().reset()
 
     def step(self) -> None:
@@ -388,5 +388,5 @@ class GAGame(GameBase):
         self.snake.move(direction)
         self.eval_state()
         self.coords_stepped.append(self.snake.head_coords.copy())
-        self.dirs_to_apple.append(self.snake.head_dir)
+        self.dirs_from_last_apple.append(self.snake.head_dir)
         super().step()
