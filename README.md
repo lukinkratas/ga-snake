@@ -16,6 +16,6 @@ uv run --group ga train_ga.py
 ```
 - 160 genomes
 - 8x4 matrix controlled
-- 8 features: rel. distance to danger in each direction, rel. distance to apple in each direction
+- 8 features: danger (rel. distance to wall or body) in each direction, rel. distance to apple in each direction
 
-https://github.com/user-attachments/assets/c1e7943f-70f8-44cf-8d10-8aaa097b331e
+https://github.com/user-attachments/assets/9097a2af-d041-4078-a492-54cf8ffe0297

@@ -5,7 +5,7 @@ from itertools import product
 import numpy as np
 import pygame
 
-from .const import DOWN, LEFT, RIGHT, UP
+from .const import DIRECTIONS, DOWN, LEFT, RIGHT, UP
 from .state import AppleBase, DeterministicApple, RandomApple, Snake, Wall
 
 logger = logging.getLogger(__name__)
@@ -64,6 +64,19 @@ class HumanController:
 
 
 class GAController:
+    NFEATURES = 8
+
+    FEATURE_NAMES = [
+        "danger_right",
+        "danger_left",
+        "danger_down",
+        "danger_up",
+        "apple_right",
+        "apple_left",
+        "apple_down",
+        "apple_up",
+    ]
+
     def __init__(self, ncols: int, nrows: int, genome: np.ndarray) -> None:
         self.ncols = ncols
         self.nrows = nrows
@@ -80,8 +93,7 @@ class GAController:
         scores = features @ self.genome  # linear combination
         move_idx = np.argmax(scores)
 
-        directions = [RIGHT, LEFT, DOWN, UP]
-        return directions[move_idx]
+        return list(DIRECTIONS.values())[move_idx]
 
     def eval_state(self, snake: Snake, apple: AppleBase, wall: Wall) -> np.ndarray:
         """Evaluate the state of snake, apple and wall.
@@ -99,118 +111,92 @@ class GAController:
         head_x, head_y = snake.head_coords
 
         # Distances to walls
-        wall_right_rects_dists = (
-            np.array([c[0] for c in wall.coords if c[1] == head_y and c[0] > head_x])
-            - head_x
-            - 1
+        wall_right_rects_xs = np.array(
+            [c[0] for c in wall.coords if c[1] == head_y and c[0] > head_x]
         )
-        wall_safety_right = (
-            np.min(wall_right_rects_dists) / available_ncols
-            if wall_right_rects_dists.size != 0
+        # danger: 1 if wall is next to head, linearly decreasing
+        wall_danger_right = (
+            1 - np.min(wall_right_rects_xs - head_x - 1)
+            if wall_right_rects_xs.size != 0
             # No bodies rects found on the right
-            else np.float64(1)
-        )
+            else np.float64(0)
+        ) / available_ncols
 
         # Distances to snake body
-        body_right_rects_dists = (
-            np.array(
-                [c[0] for c in snake.body_coords if c[1] == head_y and c[0] > head_x]
-            )
-            - head_x
-            - 1
+        body_right_rects_xs = np.array(
+            [c[0] for c in snake.body_coords if c[1] == head_y and c[0] > head_x]
         )
-        body_safety_right = (
-            np.min(body_right_rects_dists) / available_ncols
-            if body_right_rects_dists.size != 0
-            else np.float64(1)
-        )
+        body_danger_right = (
+            1 - np.min(body_right_rects_xs - head_x - 1)
+            if body_right_rects_xs.size != 0
+            else np.float64(0)
+        ) / available_ncols
 
-        wall_left_rects_dists = (
-            head_x
-            - 1
-            - np.array([c[0] for c in wall.coords if c[1] == head_y and c[0] < head_x])
+        wall_left_rects_xs = np.array(
+            [c[0] for c in wall.coords if c[1] == head_y and c[0] < head_x]
         )
+        wall_danger_left = (
+            1 - np.min(head_x - 1 - wall_left_rects_xs)
+            if wall_left_rects_xs.size != 0
+            else np.float64(0)
+        ) / available_ncols
 
-        wall_safety_left = (
-            np.min(wall_left_rects_dists) / available_ncols
-            if wall_left_rects_dists.size != 0
-            else np.float64(1)
+        body_left_rects_xs = np.array(
+            [c[0] for c in snake.body_coords if c[1] == head_y and c[0] < head_x]
         )
+        body_danger_left = (
+            1 - np.min(head_x - 1 - body_left_rects_xs)
+            if body_left_rects_xs.size != 0
+            else np.float64(0)
+        ) / available_ncols
 
-        body_left_rects_dists = (
-            head_x
-            - 1
-            - np.array(
-                [c[0] for c in snake.body_coords if c[1] == head_y and c[0] < head_x]
-            )
+        wall_up_rects_ys = np.array(
+            [c[1] for c in wall.coords if c[0] == head_x and c[1] < head_y]
         )
+        wall_danger_up = (
+            1 - np.min(head_y - 1 - wall_up_rects_ys)
+            if wall_up_rects_ys.size != 0
+            else np.float64(0)
+        ) / available_nrows
 
-        body_safety_left = (
-            np.min(body_left_rects_dists) / available_ncols
-            if body_left_rects_dists.size != 0
-            else np.float64(1)
+        body_up_rects_ys = np.array(
+            [c[1] for c in snake.body_coords if c[0] == head_x and c[1] < head_y]
         )
+        body_danger_up = (
+            1 - np.min(head_y - 1 - body_up_rects_ys)
+            if body_up_rects_ys.size != 0
+            else np.float64(0)
+        ) / available_nrows
 
-        wall_up_rects_dists = (
-            head_y
-            - 1
-            - np.array([c[1] for c in wall.coords if c[0] == head_x and c[1] < head_y])
+        wall_down_rects_ys = np.array(
+            [c[1] for c in wall.coords if c[0] == head_x and c[1] > head_y]
         )
+        wall_danger_down = (
+            1 - np.min(wall_down_rects_ys - head_y - 1)
+            if wall_down_rects_ys.size != 0
+            else np.float64(0)
+        ) / available_nrows
 
-        wall_safety_up = (
-            np.min(wall_up_rects_dists) / available_nrows
-            if wall_up_rects_dists.size != 0
-            else np.float64(1)
+        body_down_rects_ys = np.array(
+            [c[1] for c in snake.body_coords if c[0] == head_x and c[1] > head_y]
         )
+        body_danger_down = (
+            1 - np.min(body_down_rects_ys - head_y - 1)
+            if body_down_rects_ys.size != 0
+            else np.float64(0)
+        ) / available_nrows
 
-        body_up_rects_dists = (
-            head_y
-            - 1
-            - np.array(
-                [c[1] for c in snake.body_coords if c[0] == head_x and c[1] < head_y]
-            )
-        )
-
-        body_safety_up = (
-            np.min(body_up_rects_dists) / available_nrows
-            if body_up_rects_dists.size != 0
-            else np.float64(1)
-        )
-
-        wall_down_rects_dists = (
-            np.array([c[1] for c in wall.coords if c[0] == head_x and c[1] > head_y])
-            - head_y
-            - 1
-        )
-
-        wall_safety_down = (
-            np.min(wall_down_rects_dists) / available_nrows
-            if wall_down_rects_dists.size != 0
-            else np.float64(1)
-        )
-
-        body_down_rects_dists = (
-            np.array(
-                [c[1] for c in snake.body_coords if c[0] == head_x and c[1] > head_y]
-            )
-            - head_y
-            - 1
-        )
-
-        body_safety_down = (
-            np.min(body_down_rects_dists) / available_nrows
-            if body_down_rects_dists.size != 0
-            else np.float64(1)
-        )
-
-        safety_right = np.min([wall_safety_right, body_safety_right])
-        safety_left = np.min([wall_safety_left, body_safety_left])
-        safety_up = np.min([wall_safety_up, body_safety_up])
-        safety_down = np.min([wall_safety_down, body_safety_down])
+        danger_right = np.min([wall_danger_right, body_danger_right])
+        danger_left = np.min([wall_danger_left, body_danger_left])
+        danger_up = np.min([wall_danger_up, body_danger_up])
+        danger_down = np.min([wall_danger_down, body_danger_down])
 
         # Distances to apple
         apple_dx, apple_dy = (apple.coords - snake.head_coords) / np.array(
-            [available_ncols, available_nrows]
+            [
+                available_ncols,
+                available_nrows,
+            ]
         )
 
         apple_right = np.max((0, apple_dx))
@@ -218,37 +204,21 @@ class GAController:
         apple_up = np.max((0, -apple_dy))
         apple_down = np.max((0, apple_dy))
 
-        logger.debug(
-            "features:"
-            # f", {wall_safety_right=}"
-            # f", {wall_safety_left=}"
-            # f", {wall_safety_down=}"
-            # f", {wall_safety_up=}"
-            # f", {body_safety_right=}"
-            # f", {body_safety_left=}"
-            # f", {body_safety_down=}"
-            # f", {body_safety_up=}"
-            f", {safety_right=}"
-            f", {safety_left=}"
-            f", {safety_down=}"
-            f", {safety_up=}"
-            f", {apple_right=}"
-            f", {apple_left=}"
-            f", {apple_up=}"
-            f", {apple_down=}"
-        )
-        return np.array(
+        features = np.array(
             [
-                safety_right,
-                safety_left,
-                safety_down,
-                safety_up,
+                danger_right,
+                danger_left,
+                danger_down,
+                danger_up,
                 apple_right,
                 apple_left,
                 apple_down,
                 apple_up,
             ]
         )
+        logger.debug(f"features: {dict(zip(self.FEATURE_NAMES, features))}")
+
+        return features
 
 
 class Player:

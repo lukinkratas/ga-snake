@@ -51,11 +51,11 @@ class DeterministicApple(AppleBase):
         np.array([10, 15]),
         np.array([10, 5]),
         np.array([20, 5]),
-        # mid of wall, dist 1, clockwise
-        np.array([27, 10]),
-        np.array([15, 17]),
-        np.array([2, 10]),
-        np.array([15, 2]),
+        # mid of wall, clockwise
+        np.array([28, 10]),
+        np.array([15, 18]),
+        np.array([1, 10]),
+        np.array([15, 1]),
         # every corner, clockwise
         np.array([28, 18]),
         np.array([1, 18]),

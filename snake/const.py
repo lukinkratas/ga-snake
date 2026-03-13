@@ -4,3 +4,5 @@ RIGHT = np.array([1, 0])
 LEFT = np.array([-1, 0])
 UP = np.array([0, -1])
 DOWN = np.array([0, 1])
+
+DIRECTIONS = {"right": RIGHT, "left": LEFT, "down": DOWN, "up": UP}

@@ -7,12 +7,13 @@ import numpy as np
 import pygame
 
 from .const import (
+    DIRECTIONS,
     DOWN,
     LEFT,
     RIGHT,
     UP,
 )
-from .engine import GameBase, HumanController
+from .engine import GAController, GameBase, HumanController
 from .state import AppleBase, Snake, Wall
 
 
@@ -140,7 +141,8 @@ class Renderer:
         font_size: int,
         scoreboard_row_size: int,
         font_family: str = "Arial",
-        plot_surf: pygame.Surface | None = None,
+        history_plot_surf: pygame.Surface | None = None,
+        genome_plot_surf: pygame.Surface | None = None,
     ) -> None:
         self.game_surf = game_surf
         self.score_surf = score_surf
@@ -153,16 +155,29 @@ class Renderer:
         self.font = pygame.font.SysFont(font_family, font_size)
         self.font_bold = pygame.font.SysFont(font_family, font_size, bold=True)
         self.scoreboard_row_size = scoreboard_row_size
-        self.plot_surf = plot_surf
+        self.history_plot_surf = history_plot_surf
+        self.genome_plot_surf = genome_plot_surf
 
-        if self.plot_surf:
-            matplotlib.use("pygame")
+        if self.history_plot_surf or self.genome_plot_surf:
             px = 1 / plt.rcParams["figure.dpi"]  # pixel in inches
             plt.rcParams["font.family"] = font_family
-            width_px = self.plot_surf.get_width()
-            height_px = self.plot_surf.get_height()
-            self.fig, self.ax = plt.subplots(figsize=(width_px * px, height_px * px))
-            self.fig.set_tight_layout(True)
+            matplotlib.use("pygame")
+
+        if self.history_plot_surf:
+            width_px = self.history_plot_surf.get_width()
+            height_px = self.history_plot_surf.get_height()
+            self.history_fig, self.history_ax = plt.subplots(
+                figsize=(width_px * px, height_px * px)
+            )
+            self.history_fig.set_tight_layout(True)
+
+        if self.genome_plot_surf:
+            width_px = self.history_plot_surf.get_width()
+            height_px = self.history_plot_surf.get_height()
+            self.genome_fig, self.genome_ax = plt.subplots(
+                nrows=1, ncols=4, sharey=True, figsize=(width_px * px, height_px * px)
+            )
+            self.genome_fig.set_tight_layout(True)
 
     def get_square(self, coords: np.ndarray) -> pygame.rect:
         """Draw square of grid_size.
@@ -428,40 +443,6 @@ class Renderer:
                 )
                 self.render_player_row(game, row_rect)
 
-    def render_plot(
-        self, best_fitness_history: list[np.ndarray], avg_fitness_history: list
-    ) -> None:
-        """Render matplotlib plot on the screen.
-
-        Args:
-            best_fitness_history: list of best fitness per generation
-        """
-        ngens = len(best_fitness_history)
-        self.ax.clear()
-        xs = np.arange(1, ngens + 1, dtype=np.int16)
-        self.ax.bar(xs, best_fitness_history, label="max", color="tab:blue")
-        self.ax.plot(
-            xs, avg_fitness_history, label="avg", color="tab:orange", linewidth=2.0
-        )
-
-        self.ax.set_title("Fitness per Generation")
-        self.ax.set_xlabel("Generation")
-        self.ax.set_ylabel("Fitness")
-        self.ax.legend(loc="upper left")
-
-        # needed to invoke dtype on axis
-        nx = np.linspace(0, ngens + 1, num=min(ngens + 2, 12), dtype=np.int16)
-        self.ax.set_xticks(nx)
-
-        plt.tight_layout(pad=3.0)
-        # self.fig.subplots_adjust(left=0.2, bottom=0.2)
-        # self.fig.tight_layout(rect=[2, 2, 2, 2])
-        # self.fig.align_labels()
-        # self.fig.align_titles()
-
-        self.fig.canvas.draw()
-        self.plot_surf.blit(self.fig)
-
     def render_paused(self) -> None:
         """Render paused on the screen."""
         font_color = (25, 25, 25, 255)
@@ -473,3 +454,61 @@ class Renderer:
             self.scoreboard_row_size,
         )
         render_text_on_rect(self.game_surf, text, self.font_bold, font_color, rect)
+
+    def render_history_plot(
+        self, best_fitness_history: list[float], avg_fitness_history: list[float]
+    ) -> None:
+        """Render matplotlib plot on the screen.
+
+        Args:
+            best_fitness_history: list of best fitness per generation
+        """
+        ngens = len(best_fitness_history)
+        self.history_ax.clear()
+        xs = np.arange(1, ngens + 1, dtype=np.int16)
+        self.history_ax.bar(xs, best_fitness_history, label="max", color="tab:blue")
+        self.history_ax.plot(
+            xs, avg_fitness_history, label="avg", color="tab:orange", linewidth=2.0
+        )
+
+        self.history_ax.set_title("Fitness per Generation", fontsize=self.font_size)
+        self.history_ax.set_xlabel("Generation", fontsize=self.font_size)
+        self.history_ax.set_ylabel("Fitness", fontsize=self.font_size)
+        self.history_ax.legend(loc="upper left", fontsize=self.font_size)
+
+        # needed to invoke dtype on axis
+        nx = np.linspace(0, ngens + 1, num=min(ngens + 2, 12), dtype=np.int16)
+        self.history_ax.set_xticks(nx)
+
+        # plt.tight_layout(pad=6.0)
+        # self.history_fig.subplots_adjust(left=0.5, bottom=0.5)
+        self.history_fig.tight_layout(rect=[0.05, 0, 1, 1])
+        # self.fig.align_labels()
+        # self.fig.align_titles()
+
+        self.history_fig.canvas.draw()
+        self.history_plot_surf.blit(self.history_fig)
+
+    def render_genome_plot(self, genome: np.ndarray) -> None:
+        ys = [
+            " ".join(fname.capitalize().split("_"))
+            for fname in GAController.FEATURE_NAMES
+        ]
+        for idx, direction in enumerate(DIRECTIONS.keys()):
+            ax = self.genome_ax[idx]
+
+            ax.clear()
+
+            xs = genome[:, idx]
+            # ax.scatter(xs, feature_names, s=100 * np.abs(xs), alpha=1.0)
+            ax.plot(xs, ys, marker="o", linestyle="")
+
+            ax.set_title(direction.capitalize(), fontsize=self.font_size)
+            ax.set_xlim(min(*xs, -1), max(*xs, 1))
+            ax.grid(True)
+
+        self.genome_fig.suptitle("Best Genome", fontsize=self.font_size)
+        self.genome_fig.tight_layout(rect=[0.16, 0, 1, 1])
+
+        self.genome_fig.canvas.draw()
+        self.genome_plot_surf.blit(self.genome_fig)

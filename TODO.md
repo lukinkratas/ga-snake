@@ -1,5 +1,7 @@
-- [ ] frames continue even after pause
+- [ ] genomes csv with score.
 - [ ] lint
+- [x] init_genomes with prev best genomes
+- [x] best genome visualization
 - [x] render snake names on the head
 - [x] render apple idxs
 - [x] init_render() ? -> Not really needed
