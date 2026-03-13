@@ -353,7 +353,7 @@ class Renderer:
 
         # separate for loop, bcs I want the snakes to be visible on top of wall
         # active games with highest score render last
-        alpha_map = {True: 155, False: 55}
+        alpha_map = {True: 127, False: 63}
         for game in games[:-1]:
             alpha = alpha_map[game.snake.is_alive]
             self.render_snake(game.snake, alpha)
@@ -379,7 +379,7 @@ class Renderer:
         if isinstance(game.player.controller, HumanController) and game.steps == 0:
             text += f" (use {game.player.controller.keymap_name})"
 
-        text += f", score: {game.player.score}"
+        text += f": {game.player.score}"
 
         if game.is_over:
             text += " - GAME OVER"
@@ -427,7 +427,7 @@ class Renderer:
         available_height = self.score_surf.get_height()
         # count rows for player scores, 3 reserved for intructions, title and footer
         available_nrows = int(available_height / self.scoreboard_row_size) - 3
-        # round up numbber of cols
+        # round up number of cols
         ncols = math.ceil((len(games) / available_nrows))
 
         y_offset = 2 * self.scoreboard_row_size

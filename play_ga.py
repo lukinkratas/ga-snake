@@ -23,6 +23,8 @@ HEIGHT = NROWS * GRID_SIZE
 FPS = 15
 NPLAYERS = 3
 
+BEST_GENOMES_DIR = Path("best_genomes")
+
 
 def init_genomes() -> list[np.ndarray]:
     """Initialize genomes.
@@ -32,10 +34,25 @@ def init_genomes() -> list[np.ndarray]:
 
     Returns: list of genomes
     """
-    custom_genome = np.concatenate([0.8 * np.eye(4), 0.5 * np.eye(4)])
-    best_genome_path = Path("best_genome.npy")
-    last_best_genome = np.load(best_genome_path)
-    return [custom_genome, last_best_genome]
+    custom_genome = np.concatenate(
+        [
+            np.array(
+                [
+                    [-1.0, 0.25, 0.25, 0.25],
+                    [0.25, -1.0, 0.25, 0.25],
+                    [0.25, 0.25, -1.0, 0.25],
+                    [0.25, 0.25, 0.25, -1.0],
+                ]
+            ),
+            0.5 * np.eye(4),
+        ]
+    )
+    best_genomes = [
+        np.load(genome_npy)
+        for genome_npy in BEST_GENOMES_DIR.iterdir()
+        if str(genome_npy).endswith(".npy")
+    ]
+    return [custom_genome] + best_genomes
 
 
 def init_games(genomes: list[np.ndarray]) -> list[GAGame]:

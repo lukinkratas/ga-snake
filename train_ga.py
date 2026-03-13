@@ -26,12 +26,12 @@ WIDTH = NCOLS * GRID_SIZE
 HEIGHT = NROWS * GRID_SIZE
 
 FPS = 60
-POP_SIZE = 160
-NGENS = 200
+POP_SIZE = 200
+NGENS = 300
 
 BEST_GENOMES_DIR = Path("best_genomes")
 
-SHAPE = (GAController.NFEATURES, len(DIRECTIONS))
+SHAPE = (len(GAController.FEATURE_NAMES), len(DIRECTIONS))
 VECS_TO_APPLE = np.array(DeterministicApple._COORDS) - np.array(
     [Snake.INIT_HEAD_COORDS, *DeterministicApple._COORDS[:-1]]
 )
@@ -120,41 +120,41 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
         if len(game.coords_stepped) > 0
         else 1
     )
-    fitness -= cycling_penalty
+    fitness -= 2 * cycling_penalty
 
     # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance (diagonal), otherwise linearly decreasing
     apple_dist_penalty = linalg.norm(
         game.apple.coords - game.snake.head_coords, 2
     ) / linalg.norm([NCOLS, NROWS], 2)
-    fitness -= apple_dist_penalty
+    fitness -= 0.1 * apple_dist_penalty
 
-    # apple dir penalty: 0 if all applied directions in the current apple hunt are are the same as vector between current and previous apple.
-    vec_to_apple = VECS_TO_APPLE[game.apple.idx].copy()
-    # select nonzero items
-    nz_idxs = np.nonzero(vec_to_apple)
-    # normalize nonzero items to 1
-    vec_to_apple[nz_idxs] = vec_to_apple[nz_idxs] / np.abs(vec_to_apple[nz_idxs])
-
-    # apple_dir can be: [1, 0], [0, 1], or even [1, 1]
-    if np.count_nonzero(vec_to_apple) == 2:
-        apple_dir_x, apple_dir_y = vec_to_apple
-        apple_dirs = [np.array([apple_dir_x, 0]), np.array([0, apple_dir_y])]
-    else:
-        apple_dirs = [vec_to_apple]
-
-    # [2 or 1 or 0, ...]
-    dir_matches = np.count_nonzero(
-        np.isin(game.dirs_from_last_apple, apple_dirs), axis=1
-    )
-    apple_dir_penalty = (
-        (
-            np.extract(dir_matches != 2, dir_matches).shape[0]
-            / len(game.dirs_from_last_apple)
-        )
-        if len(game.dirs_from_last_apple) > 0
-        else 1
-    )
-    fitness -= apple_dir_penalty
+    # # apple dir penalty: 0 if all applied directions in the current apple hunt are are the same as vector between current and previous apple.
+    # vec_to_apple = VECS_TO_APPLE[game.apple.idx].copy()
+    # # select nonzero items
+    # nz_idxs = np.nonzero(vec_to_apple)
+    # # normalize nonzero items to 1
+    # vec_to_apple[nz_idxs] = vec_to_apple[nz_idxs] / np.abs(vec_to_apple[nz_idxs])
+    #
+    # # apple_dir can be: [1, 0], [0, 1], or even [1, 1]
+    # if np.count_nonzero(vec_to_apple) == 2:
+    #     apple_dir_x, apple_dir_y = vec_to_apple
+    #     apple_dirs = [np.array([apple_dir_x, 0]), np.array([0, apple_dir_y])]
+    # else:
+    #     apple_dirs = [vec_to_apple]
+    #
+    # # [2 or 1 or 0, ...]
+    # dir_matches = np.count_nonzero(
+    #     np.isin(game.dirs_from_last_apple, apple_dirs), axis=1
+    # )
+    # apple_dir_penalty = (
+    #     (
+    #         np.extract(dir_matches != 2, dir_matches).shape[0]
+    #         / len(game.dirs_from_last_apple)
+    #     )
+    #     if len(game.dirs_from_last_apple) > 0
+    #     else 1
+    # )
+    # fitness -= apple_dir_penalty
 
     logger.debug(
         f"{game.player.name} fitness: {fitness}"
@@ -163,7 +163,7 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
         f", {steps_penalty=}"
         f", {cycling_penalty=}"
         f", {apple_dist_penalty=}"
-        f", {apple_dir_penalty=}"
+        # f", {apple_dir_penalty=}"
     )
 
     return fitness
@@ -196,21 +196,24 @@ def mutate(genome: np.ndarray, gen: int) -> np.ndarray:
     Return: Mutated genome (array)
     """
     logger.debug("Mutating genome.")
-    mutation_rate = 0.5
-    mutation_scale = 0.5
+    # mutation_rate = 0.5
+    # mutation_scale = 0.5
 
-    # progress = gen / NGENS
-    # mutation_rate = max(0.05, 0.2 * (1 - progress))
-    # mutation_scale = max(0.05, 0.4 * (1 - progress))
+    progress = gen / NGENS
+    mutation_rate = 0.2 + 0.2 * (1 - progress)
+    mutation_scale = 0.4 + 0.4 * (1 - progress)
 
     # Cosine annealing: oscillates to escape local optima
     # mutation_rate = 0.05 + 0.15 * (1 + np.cos(np.pi * progress)) / 2
     # mutation_scale = 0.05 + 0.35 * (1 + np.cos(np.pi * progress)) / 2
 
-    mask = rng.uniform(0, 1, genome.shape) < mutation_rate
+    # mask = rng.uniform(0, 1, genome.shape) < mutation_rate
+    mask = rng.random(genome.shape) < mutation_rate
     noise = rng.uniform(-1, 1, genome.shape) * mutation_scale
+
     new_arr = genome.copy()
     new_arr[mask] += noise[mask]
+
     return new_arr
 
 
@@ -280,8 +283,8 @@ def get_next_population(
 
     Returns: next population
     """
-    # 15%, at least 3
-    nelites = max(3, round(0.15 * POP_SIZE))
+    # 10%, at least 3
+    nelites = int(0.10 * POP_SIZE)
 
     elites = sorted_population[:nelites]
     rest = sorted_population[nelites:]
@@ -291,7 +294,7 @@ def get_next_population(
     next_population = elites.copy()
 
     # inject random immigrants
-    nimmigrants = max(2, round(0.05 * POP_SIZE))
+    nimmigrants = int(0.10 * POP_SIZE)
     next_population.extend(rng.uniform(-1.0, 1.0, size=(nimmigrants, *SHAPE)))
 
     mutated_genomes = get_mutated_genomes(elites, size=int(0.15 * POP_SIZE), gen=gen)
@@ -306,7 +309,7 @@ def get_next_population(
     crossover_genomes = get_crossover_genomes(elites, rest, size=int(0.2 * POP_SIZE))
     next_population.extend(crossover_genomes)
 
-    return next_population[:POP_SIZE]
+    return next_population
 
 
 def main() -> None:
@@ -383,7 +386,8 @@ def main() -> None:
         logger.info(f"New gen {gen}")
 
         recorder = ScreenRecorder(FPS).start_rec()
-        max_steps = max(100, gen * 10)
+        # 100, 200, 300, etc.
+        max_steps = 100 + int(gen / 50) * 100
         # gen loop
         for step in range(max_steps + POP_SIZE):
             clock.tick(FPS)

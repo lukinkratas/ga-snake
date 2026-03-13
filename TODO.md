@@ -1,3 +1,4 @@
+- [ ] genome pools
 - [ ] genomes csv with score.
 - [ ] lint
 - [x] init_genomes with prev best genomes

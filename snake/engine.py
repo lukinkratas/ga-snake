@@ -64,8 +64,6 @@ class HumanController:
 
 
 class GAController:
-    NFEATURES = 8
-
     FEATURE_NAMES = [
         "danger_right",
         "danger_left",
