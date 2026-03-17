@@ -262,7 +262,6 @@ class GameBase(ABC):
     def reset(self) -> None:
         """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
         self.has_started = False
-        self.steps = 0
         self.player.reset()
         self.snake.reset()
         self.apple.reset()
@@ -308,7 +307,7 @@ class GameBase(ABC):
     @abstractmethod
     def step(self) -> None:
         """Do a game step - player controller sets direction, snake moves, evaluate the state."""  # noqa E501
-        self.steps += 1
+        pass
 
 
 class HumanGame(GameBase):
@@ -328,7 +327,6 @@ class HumanGame(GameBase):
         direction = self.player.controller.set_dir()
         self.snake.move(direction)
         self.eval_state()
-        super().step()
 
 
 class GAGame(GameBase):
@@ -343,10 +341,15 @@ class GAGame(GameBase):
     ) -> None:
         super().__init__(ncols, nrows, player, wall, snake, apple)
 
+    @property
+    def steps(self):
+        return len(self.coords_stepped)
+
     def reset(self) -> None:
         """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
         self.coords_stepped = []
         self.dirs_from_last_apple = [self.snake.head_dir]
+        self.fitness = None
         super().reset()
 
     def step(self) -> None:
@@ -357,4 +360,3 @@ class GAGame(GameBase):
         self.eval_state()
         self.coords_stepped.append(self.snake.head_coords.copy())
         self.dirs_from_last_apple.append(self.snake.head_dir)
-        super().step()

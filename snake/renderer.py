@@ -1,5 +1,5 @@
 import math
-from typing import Any
+from typing import Any, Sequence
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -336,12 +336,11 @@ class Renderer:
                 rect=head_rect,
             )
 
-    def render_games(self, games: list[GameBase], gen: str | None = None) -> None:
+    def render_games(self, games: list[GameBase]) -> None:
         """Render games and corresponding walls, snakes and apples in given order on the screen.
 
         Args:
             games: list of games
-            gen: GA generation number (optional)
         """
         self.game_surf.fill(color=(175,) * 3)
         self.score_surf.fill(color=(25,) * 3)
@@ -376,7 +375,7 @@ class Renderer:
         if game.player.name is not None:
             text += f" {game.player.name}"
 
-        if isinstance(game.player.controller, HumanController) and game.steps == 0:
+        if isinstance(game.player.controller, HumanController) and not game.has_started:
             text += f" (use {game.player.controller.keymap_name})"
 
         text += f": {game.player.score}"
@@ -424,17 +423,19 @@ class Renderer:
         )
         render_text_on_rect(self.score_surf, text, self.font_bold, font_color, row_rect)
 
+        print_more = len(games) > 200
+        available_games = games[:199] if len(games) > 200 else games
         available_height = self.score_surf.get_height()
         # count rows for player scores, 3 reserved for intructions, title and footer
         available_nrows = int(available_height / self.scoreboard_row_size) - 3
         # round up number of cols
-        ncols = math.ceil((len(games) / available_nrows))
+        ncols = math.ceil(len(available_games) / available_nrows)
 
         y_offset = 2 * self.scoreboard_row_size
         for col_idx in range(ncols):
             from_idx = col_idx * available_nrows
             to_idx = (col_idx + 1) * available_nrows
-            for row_idx, game in enumerate(games[from_idx:to_idx]):
+            for row_idx, game in enumerate(available_games[from_idx:to_idx]):
                 row_rect = pygame.Rect(
                     col_idx * self.score_surf.get_width() / ncols,
                     y_offset + row_idx * self.scoreboard_row_size,
@@ -442,6 +443,21 @@ class Renderer:
                     self.scoreboard_row_size,
                 )
                 self.render_player_row(game, row_rect)
+
+        if print_more:
+            row_rect = pygame.Rect(
+                (ncols - 1) * self.score_surf.get_width() / ncols,
+                y_offset + (available_nrows - 1) * self.scoreboard_row_size,
+                self.score_surf.get_width() / ncols,
+                self.scoreboard_row_size,
+            )
+            render_text_on_rect(
+                surf=self.score_surf,
+                text=f"and {len(games) - len(available_games)} more ....",
+                font=self.font,
+                font_color=font_color,
+                rect=row_rect,
+            )
 
     def render_paused(self) -> None:
         """Render paused on the screen."""
@@ -471,7 +487,7 @@ class Renderer:
             xs, avg_fitness_history, label="avg", color="tab:orange", linewidth=2.0
         )
 
-        self.history_ax.set_title("Fitness per Generation", fontsize=self.font_size)
+        self.history_ax.set_title("Fitness per Generation")
         self.history_ax.set_xlabel("Generation", fontsize=self.font_size)
         self.history_ax.set_ylabel("Fitness", fontsize=self.font_size)
         self.history_ax.legend(loc="upper left", fontsize=self.font_size)
@@ -482,14 +498,19 @@ class Renderer:
 
         # plt.tight_layout(pad=6.0)
         # self.history_fig.subplots_adjust(left=0.5, bottom=0.5)
-        self.history_fig.tight_layout(rect=[0.05, 0, 1, 1])
+        self.history_fig.tight_layout(rect=[0.10, 0.05, 0.95, 0.95])
         # self.fig.align_labels()
         # self.fig.align_titles()
 
         self.history_fig.canvas.draw()
         self.history_plot_surf.blit(self.history_fig)
 
-    def render_genome_plot(self, genome: np.ndarray) -> None:
+    def render_genome_plot(
+        self,
+        genome: np.ndarray,
+        color: Sequence[float] | None = None,
+        name: str | None = None,
+    ) -> None:
         ys = [
             " ".join(fname.capitalize().split("_"))
             for fname in GAController.FEATURE_NAMES
@@ -507,8 +528,11 @@ class Renderer:
             ax.set_xlim(min(*xs, -1), max(*xs, 1))
             ax.grid(True)
 
-        self.genome_fig.suptitle("Best Genome", fontsize=self.font_size)
-        self.genome_fig.tight_layout(rect=[0.16, 0, 1, 1])
+        title = "Last Best Genome"
+        if name:
+            title += f" {name}"
+        self.genome_fig.suptitle(title, color=color)
+        self.genome_fig.tight_layout(rect=[0.20, 0.05, 0.95, 0.95])
 
         self.genome_fig.canvas.draw()
         self.genome_plot_surf.blit(self.genome_fig)

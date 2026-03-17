@@ -34,18 +34,22 @@ def init_genomes() -> list[np.ndarray]:
 
     Returns: list of genomes
     """
-    custom_genome = np.concatenate(
-        [
-            np.array(
-                [
-                    [-1.0, 0.25, 0.25, 0.25],
-                    [0.25, -1.0, 0.25, 0.25],
-                    [0.25, 0.25, -1.0, 0.25],
-                    [0.25, 0.25, 0.25, -1.0],
-                ]
-            ),
-            0.5 * np.eye(4),
-        ]
+    custom_genome = np.clip(
+        np.array(
+            [
+                [-1.0, 0.35, 0.35, 0.35],
+                [0.35, -1.0, 0.35, 0.35],
+                [0.35, 0.35, -1.0, 0.35],
+                [0.35, 0.35, 0.35, -1.0],
+                [1.0, 0, 0, 0],
+                [0, 1.0, 0, 0],
+                [0, 0, 1.0, 0],
+                [0, 0, 0, 1.0],
+            ]
+        )
+        + np.random.uniform(-0.1, 0.1, size=(8, 4)),
+        -1,
+        1,
     )
     best_genomes = [
         np.load(genome_npy)

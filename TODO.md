@@ -1,6 +1,9 @@
-- [ ] genome pools
-- [ ] genomes csv with score.
+- [ ] genomes csv with score
 - [ ] lint
+- [x] scoreboard limit, but genomes can exceed
+- [x] adjust alpha for rendering
+- [x] genome plot color based on last best genome
+- [x] genome pools
 - [x] init_genomes with prev best genomes
 - [x] best genome visualization
 - [x] render snake names on the head

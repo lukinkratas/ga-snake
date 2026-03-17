@@ -65,15 +65,15 @@ class DeterministicApple(AppleBase):
         np.array([2, 17]),
         np.array([2, 2]),
         # dist 0, mid of wall, anti-clockwise
+        np.array([15, 1]),
         np.array([1, 10]),
         np.array([15, 18]),
         np.array([28, 10]),
-        np.array([15, 1]),
         # dist 0, every corver, anti-clockwise
+        np.array([28, 1]),
         np.array([1, 1]),
         np.array([1, 18]),
         np.array([28, 18]),
-        np.array([28, 1]),
         # mid
         np.array([15, 10]),
         np.array([14, 10]),

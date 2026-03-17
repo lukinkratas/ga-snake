@@ -132,18 +132,19 @@ def main() -> None:
 
                 game.step()
 
+            renderer.render_games(games)
             sorted_games_desc = sorted(
                 games,
-                key=lambda g: (not g.is_over, g.player.score, g.steps),
+                key=lambda g: (not g.is_over, g.player.score),
                 reverse=True,
             )
-            renderer.render_games(sorted_games_desc[::-1])
             renderer.render_scoreboard(sorted_games_desc)
 
         if is_paused and DEBUG:
             renderer.render_coords()
         if is_paused:
             renderer.render_paused()
+
         pygame.display.update()
 
     pygame.quit()

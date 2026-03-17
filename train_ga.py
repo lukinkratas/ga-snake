@@ -1,8 +1,9 @@
 import datetime
+import itertools
 import logging
 import random
-from collections import deque
 from pathlib import Path
+from typing import Sequence, TypeAlias
 
 import numpy as np
 import pygame
@@ -15,6 +16,9 @@ from snake.renderer import Renderer
 from snake.state import DeterministicApple, Snake
 from snake.utils import get_random_color, get_squared_wall
 
+GenomePool: TypeAlias = list[np.ndarray]
+GamePool: TypeAlias = list[GAGame]
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 rng = np.random.default_rng(seed=42)
@@ -26,8 +30,10 @@ WIDTH = NCOLS * GRID_SIZE
 HEIGHT = NROWS * GRID_SIZE
 
 FPS = 60
-POP_SIZE = 200
-NGENS = 300
+POP_SIZE = 400
+NGENS = 500
+# divide genome into pools, train separately, crossover between only after some time.
+NPOOLS = 4
 
 BEST_GENOMES_DIR = Path("best_genomes")
 
@@ -37,64 +43,96 @@ VECS_TO_APPLE = np.array(DeterministicApple._COORDS) - np.array(
 )
 
 
-def init_genomes(size: int) -> list[np.ndarray]:
-    """Initialize genomes / population.
+def init_population(size: int, npools: int) -> list[GenomePool]:
+    """Initialize population / genomes.
 
     Args:
         size: length of returned list of genomes
+        npools: number of genome pools
 
-    Returns: list of genomes
+    Returns: population - array of pools (arrays) containing genomes
     """
-    # add prev best genome, if exists
-    logger.debug("Last best genomes found.")
-    best_genomes = (
-        [
-            np.load(genome_npy)
-            for genome_npy in BEST_GENOMES_DIR.iterdir()
-            if str(genome_npy).endswith(".npy")
-        ]
-        if BEST_GENOMES_DIR.exists()
-        else []
+    custom_genome = np.clip(
+        np.array(
+            [
+                [-1.0, 0.35, 0.35, 0.35],
+                [0.35, -1.0, 0.35, 0.35],
+                [0.35, 0.35, -1.0, 0.35],
+                [0.35, 0.35, 0.35, -1.0],
+                [1.0, 0, 0, 0],
+                [0, 1.0, 0, 0],
+                [0, 0, 1.0, 0],
+                [0, 0, 0, 1.0],
+            ]
+        )
+        + rng.uniform(-0.1, 0.1, size=SHAPE),
+        -1,
+        1,
     )
 
-    return best_genomes + [
-        rng.uniform(-1.0, 1.0, size=SHAPE) for _ in range(size - len(best_genomes))
-    ]
+    # # add prev best genome, if exists
+    # best_genomes = (
+    #     [
+    #         np.load(genome_npy)
+    #         for genome_npy in BEST_GENOMES_DIR.iterdir()
+    #         if str(genome_npy).endswith(".npy")
+    #     ]
+    #     if BEST_GENOMES_DIR.exists()
+    #     else []
+    # )
+    genomes = np.concatenate(
+        [
+            npools * [custom_genome],
+            # best_genomes,
+            rng.uniform(-1.0, 1.0, size=(size - npools, *SHAPE)),
+        ]
+    )
+    rng.shuffle(genomes)
+    return [list(genome_pool) for genome_pool in np.array_split(genomes, npools)]
 
 
-def init_games(population: list[np.ndarray]) -> list[GAGame]:
+def init_games(genome_pools: list[GenomePool]) -> list[GamePool]:
     """Initialize games with it's assets - player, controller, wall, snake and apple.
 
     Args:
-        population: list of genomes
+        genome_pools - array of pools (arrays) containing genomes
 
-    Returns: list of games
+    Returns: game_pools - array of pools (arrays) containing games
     """
     # common wall for all games
     wall = get_squared_wall(NCOLS, NROWS)
-    games = []
-    for idx, genome in enumerate(population, start=1):
-        color = get_random_color()
-        controller = GAController(NCOLS, NROWS, genome)
-        player = Player(color, controller, name=f"G{idx}")
-        snake = Snake(color)
-        apple = DeterministicApple(color)
-        game = GAGame(NCOLS, NROWS, player, wall, snake, apple)
-        games.append(game)
+    game_pools = []
+    for pidx, genome_pool in enumerate(genome_pools, start=1):
+        games = []
 
-    return games
+        for gidx, genome in enumerate(genome_pool, start=1):
+            color = get_random_color()
+            controller = GAController(NCOLS, NROWS, genome)
+            player = Player(color, controller, name=f"P{pidx}G{gidx}")
+            snake = Snake(color)
+            apple = DeterministicApple(color)
+            game = GAGame(NCOLS, NROWS, player, wall, snake, apple)
+            games.append(game)
+
+        game_pools.append(games)
+
+    return game_pools
 
 
-def reset_games(games: list[GAGame], population: list[np.ndarray]) -> None:
+def reset_games(game_pools: list[GamePool], genome_pools: list[GenomePool]) -> None:
     """Reset games from list and set new GA controllers from list.
 
     Args:
-        games: list of games
-        population: list of genomes (arrays)
+        game_pools - array of pools (arrays) containing games
+        genome_pools - array of pools (arrays) containing genomes
     """
-    for genome, game in zip(population, games):
-        game.reset()
-        game.player.controller = GAController(NCOLS, NROWS, genome)
+    for game_pool in game_pools:
+        for game in game_pool:
+            game.reset()
+
+    for genome_pool, game_pool in zip(genome_pools, game_pools):
+        for genome, game in zip(genome_pool, game_pool):
+            game.player.controller = GAController(NCOLS, NROWS, genome)
 
 
 def eval_fitness(game: GAGame, max_steps: int) -> float:
@@ -109,24 +147,27 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     score_factor = game.player.score
     game_over_penalty = game.is_over
     fitness = 10 * score_factor - game_over_penalty
+    info = {"score_factor": score_factor, "game_over_penalty": game_over_penalty}
 
     # coords stepped penalty: 0 if lasted till max steps, otherwise linearly increasing
     steps_penalty = 1 - game.steps / max_steps
     fitness -= steps_penalty
+    info["steps_penalty"] = steps_penalty
 
     # cycling penalty: 0 if all steps were unique, otherwise linearly increasing
-    cycling_penalty = (
-        (1 - np.unique(game.coords_stepped, axis=0).shape[0] / len(game.coords_stepped))
-        if len(game.coords_stepped) > 0
-        else 1
-    )
-    fitness -= 2 * cycling_penalty
+    if game.steps > 0:
+        cycling_penalty = (
+            1 - np.unique(game.coords_stepped, axis=0).shape[0] / game.steps
+        )
+        fitness -= 2 * cycling_penalty
+        info["cycling_penalty"] = cycling_penalty
 
     # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance (diagonal), otherwise linearly decreasing
     apple_dist_penalty = linalg.norm(
         game.apple.coords - game.snake.head_coords, 2
     ) / linalg.norm([NCOLS, NROWS], 2)
     fitness -= 0.1 * apple_dist_penalty
+    info["apple_dist_penalty"] = apple_dist_penalty
 
     # # apple dir penalty: 0 if all applied directions in the current apple hunt are are the same as vector between current and previous apple.
     # vec_to_apple = VECS_TO_APPLE[game.apple.idx].copy()
@@ -155,38 +196,37 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     #     else 1
     # )
     # fitness -= apple_dir_penalty
+    # info["apple_dir_penalty"] = apple_dir_penalty
 
-    logger.debug(
-        f"{game.player.name} fitness: {fitness}"
-        f", {score_factor=}"
-        f", {game_over_penalty=}"
-        f", {steps_penalty=}"
-        f", {cycling_penalty=}"
-        f", {apple_dist_penalty=}"
-        # f", {apple_dir_penalty=}"
-    )
+    logger.debug(f"{game.player.name} fitness: {fitness}, {info}")
 
     return fitness
 
 
-def sort_games_by_fitness(
-    games: list[GAGame], fitness: list[float]
-) -> list[np.ndarray]:
-    """Sort games by fitness in descencing order.
-
-    Args:
-        games: list of games
-        fitness: list of fitnesses
-
-    Returns: list of genomes sorted by fitness
-    """
-    # sort by fitness
-    elite_idxs = np.argsort(fitness)[::-1]
-    # select top 5 as elite
-    return [games[idx] for idx in elite_idxs]
+def eval_games(games: Sequence[GAGame], max_steps: int) -> None:
+    for game in games:
+        game.fitness = eval_fitness(game, max_steps)
 
 
-def mutate(genome: np.ndarray, gen: int) -> np.ndarray:
+# def sort_games_by_fitness(
+#     games: list[GAGame], fitness: list[float]
+# ) -> list[np.ndarray]:
+#     """Sort games by fitness in descencing order.
+#
+#     Args:
+#         games: list of games
+#         fitness: list of fitnesses
+#
+#     Returns: list of genomes sorted by fitness
+#     """
+#     # sort by fitness
+#     elite_idxs = np.argsort(fitness)[::-1]
+#     # select top 5 as elite
+#     return [games[idx] for idx in elite_idxs]
+#
+
+
+def mutate(genome: np.ndarray, progress: float) -> np.ndarray:
     """Mutate genome.
 
     Args:
@@ -196,29 +236,26 @@ def mutate(genome: np.ndarray, gen: int) -> np.ndarray:
     Return: Mutated genome (array)
     """
     logger.debug("Mutating genome.")
-    # mutation_rate = 0.5
-    # mutation_scale = 0.5
+    # mutation_rate = 0.2
+    # mutation_scale = 0.4
 
-    progress = gen / NGENS
-    mutation_rate = 0.2 + 0.2 * (1 - progress)
-    mutation_scale = 0.4 + 0.4 * (1 - progress)
-
-    # Cosine annealing: oscillates to escape local optima
-    # mutation_rate = 0.05 + 0.15 * (1 + np.cos(np.pi * progress)) / 2
-    # mutation_scale = 0.05 + 0.35 * (1 + np.cos(np.pi * progress)) / 2
-
+    # mutation_rate = 0.2 + 0.2 * (1 - progress)
     # mask = rng.uniform(0, 1, genome.shape) < mutation_rate
-    mask = rng.random(genome.shape) < mutation_rate
-    noise = rng.uniform(-1, 1, genome.shape) * mutation_scale
+    # mask = rng.random(genome.shape) < mutation_rate
+    mask = rng.choice([True, False], size=SHAPE, p=[1 - progress, progress])
+
+    mutation_scale = 0.1 + 0.4 * (1 - progress)
+    # noise = rng.uniform(-1, 1, genome.shape) * mutation_scale
+    noise = rng.choice([-1, 1], size=genome.shape) * mutation_scale
 
     new_arr = genome.copy()
     new_arr[mask] += noise[mask]
 
-    return new_arr
+    return np.clip(new_arr, -1, 1)
 
 
 def get_mutated_genomes(
-    genomes_choice: list[np.ndarray], size: int, gen: int
+    genomes_choice: list[np.ndarray], size: int, progress: float
 ) -> list[np.ndarray]:
     """Mutate genomes randomly chosen from list.
 
@@ -232,7 +269,7 @@ def get_mutated_genomes(
     genomes = []
     for _ in range(size):
         parent = random.choice(genomes_choice)
-        child_genome = mutate(parent, gen)
+        child_genome = mutate(parent, progress)
         genomes.append(child_genome)
     return genomes
 
@@ -272,44 +309,74 @@ def get_crossover_genomes(
     return genomes
 
 
-def get_next_population(
-    sorted_population: list[np.ndarray], gen: int
-) -> list[np.ndarray]:
-    """Get next generation population by mutations and crossovers.
-
-    Args:
-        sorted_population: list of genomes sorted by fitness
-        gen: current generation number, used for balancing exploration and exploitation
-
-    Returns: next population
-    """
+def get_next_genome_pools(
+    sorted_genome_pools: list[GenomePool], progress: float
+) -> list[GenomePool]:
+    """Get next generation population by mutations and crossovers."""
     # 10%, at least 3
     nelites = int(0.10 * POP_SIZE)
 
-    elites = sorted_population[:nelites]
-    rest = sorted_population[nelites:]
-    top_half = sorted_population[nelites : int(0.5 * POP_SIZE)]
+    next_genome_pools = []
+    for genome_pool in sorted_genome_pools:
+        elites = genome_pool[:nelites]
+        rest = genome_pool[nelites:]
+        top_half = genome_pool[nelites : int(0.5 * POP_SIZE)]
 
-    # keep elites unchanged
-    next_population = elites.copy()
+        # keep elites unchanged
+        new_genome_pool = elites.copy()
 
-    # inject random immigrants
-    nimmigrants = int(0.10 * POP_SIZE)
-    next_population.extend(rng.uniform(-1.0, 1.0, size=(nimmigrants, *SHAPE)))
+        # inject random immigrants
+        nimmigrants = int(0.10 * POP_SIZE)
+        new_genome_pool.extend(rng.uniform(-1.0, 1.0, size=(nimmigrants, *SHAPE)))
 
-    mutated_genomes = get_mutated_genomes(elites, size=int(0.15 * POP_SIZE), gen=gen)
-    next_population.extend(mutated_genomes)
+        mutated_genomes = get_mutated_genomes(
+            elites, size=int(0.15 * POP_SIZE), progress=progress
+        )
+        new_genome_pool.extend(mutated_genomes)
 
-    mutated_genomes = get_mutated_genomes(top_half, size=int(0.15 * POP_SIZE), gen=gen)
-    next_population.extend(mutated_genomes)
+        mutated_genomes = get_mutated_genomes(
+            top_half, size=int(0.15 * POP_SIZE), progress=progress
+        )
+        new_genome_pool.extend(mutated_genomes)
 
-    crossover_genomes = get_crossover_genomes(elites, elites, size=int(0.3 * POP_SIZE))
-    next_population.extend(crossover_genomes)
+        crossover_genomes = get_crossover_genomes(
+            elites, elites, size=int(0.3 * POP_SIZE)
+        )
+        new_genome_pool.extend(crossover_genomes)
 
-    crossover_genomes = get_crossover_genomes(elites, rest, size=int(0.2 * POP_SIZE))
-    next_population.extend(crossover_genomes)
+        crossover_genomes = get_crossover_genomes(
+            elites, rest, size=int(0.2 * POP_SIZE)
+        )
+        new_genome_pool.extend(crossover_genomes)
 
-    return next_population
+        next_genome_pools.append(new_genome_pool)
+
+    return next_genome_pools
+
+
+def crossover_genome_pools(sorted_genome_pools: list[GenomePool]) -> list[GenomePool]:
+
+    npools = len(sorted_genome_pools)
+    next_genome_pools = []
+
+    ngenomes = int(POP_SIZE / npools)
+
+    for idx in range(len(sorted_genome_pools)):
+        sorted_genome_pools_copy = sorted_genome_pools.copy()
+        base_genome_pool = sorted_genome_pools_copy.pop(idx)
+
+        base_elites = base_genome_pool[:ngenomes]
+        new_genome_pool = base_elites.copy()
+
+        for genome_pool in sorted_genome_pools_copy:
+            crossover_genomes = get_crossover_genomes(
+                base_elites, genome_pool[:ngenomes], size=ngenomes
+            )
+            new_genome_pool.extend(crossover_genomes)
+
+        next_genome_pools.append(new_genome_pool)
+
+    return next_genome_pools
 
 
 def main() -> None:
@@ -351,8 +418,9 @@ def main() -> None:
     )
     genome_plot_surf = win.subsurface(genome_plot_rect)
 
-    population = init_genomes(POP_SIZE)
-    games = init_games(population)
+    genome_pools = init_population(POP_SIZE, NPOOLS)
+    # game_pools and games flatten copy?
+    game_pools = init_games(genome_pools)
 
     ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     video_dir = Path("doc").joinpath(f"train_ga_{ts}")
@@ -360,6 +428,7 @@ def main() -> None:
     best_fitness_history = []
     avg_fitness_history = []
     gen = 1
+    max_steps = 100
 
     renderer = Renderer(
         game_surf,
@@ -374,27 +443,29 @@ def main() -> None:
         history_plot_surf=history_plot_surf,
         genome_plot_surf=genome_plot_surf,
     )
-    renderer.render_games(games)
-    renderer.render_scoreboard(games)
-    pygame.display.update()
 
-    pygame.time.delay(1000)
-
+    games = list(itertools.chain.from_iterable(game_pools))
     is_running = True
-    best_genomes = deque()
     while is_running:
         logger.info(f"New gen {gen}")
 
+        renderer.render_games(games[::-1])
+        renderer.render_scoreboard(games, gen)
+        pygame.display.update()
+        pygame.time.delay(1000)
         recorder = ScreenRecorder(FPS).start_rec()
-        # 100, 200, 300, etc.
-        max_steps = 100 + int(gen / 50) * 100
+
+        # every nth gen, adjust max steps: 100, 200, 300, etc.
+        if gen % 100 == 0:
+            max_steps += 100
+
         # gen loop
-        for step in range(max_steps + POP_SIZE):
+        for step in range(max_steps):
             clock.tick(FPS)
 
-            # start games with 1 fram delay from each other
-            if step < POP_SIZE:
-                games[step].has_started = True
+            if step == 0:
+                for game in games:
+                    game.has_started = True
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -411,11 +482,11 @@ def main() -> None:
                 if game.has_started and not game.is_over and game.steps < max_steps:
                     game.step()
 
-            fitness_desc = [eval_fitness(game, max_steps) for game in games]
-            sorted_games_desc = sort_games_by_fitness(games, fitness_desc)
-            renderer.render_games(sorted_games_desc[::-1], gen=gen)
+            # render games based on orig order, sort only for scoreboard
+            renderer.render_games(games[::-1])
+            eval_games(games, max_steps)
+            sorted_games_desc = sorted(games, key=lambda g: g.fitness, reverse=True)
             renderer.render_scoreboard(sorted_games_desc, gen=gen)
-
             pygame.display.update()
 
             if all(
@@ -431,26 +502,49 @@ def main() -> None:
             # break before the mutation and crossover
             break
 
-        fitness = [eval_fitness(game, max_steps) for game in games]
-        best_fitness_history.append(np.max(fitness))
-        avg_fitness_history.append(np.mean(fitness))
-        sorted_games_desc = sort_games_by_fitness(games, fitness)
-        sorted_population_desc = [g.player.controller.genome for g in sorted_games_desc]
-        best_genome = sorted_population_desc[0]
+        eval_games(games, max_steps)
+        games.sort(key=lambda g: g.fitness, reverse=True)
+        best_game = games[0]
 
+        best_genome = best_game.player.controller.genome
         logger.debug(f"best genome: {best_genome}")
         np.save(
             BEST_GENOMES_DIR.joinpath(f"best_genome_{ts}.npy"),
             best_genome,
         )
-        next_population = get_next_population(sorted_population_desc, gen)
+        renderer.render_genome_plot(
+            best_genome,
+            color=np.array(best_game.player.color) / 255,
+            name=best_game.player.name,
+        )
 
-        pygame.time.delay(1000)
-        reset_games(games, next_population)
-
+        fitness = [g.fitness for g in games]
+        best_fitness_history.append(np.max(fitness))
+        avg_fitness_history.append(np.mean(fitness))
         renderer.render_history_plot(best_fitness_history, avg_fitness_history)
-        renderer.render_genome_plot(best_genome)
+
         pygame.display.update()
+
+        sorted_game_pools_desc = [
+            sorted(games_pool, key=lambda g: g.fitness, reverse=True)
+            for games_pool in game_pools
+        ]
+        sorted_genome_pools_desc = [
+            [game.player.controller.genome for game in games_pool]
+            for games_pool in sorted_game_pools_desc
+        ]
+
+        # every nth gen, crossover pools
+        if gen % 100 == 0:
+            next_genome_pools = crossover_genome_pools(sorted_genome_pools_desc)
+
+        else:
+            next_genome_pools = get_next_genome_pools(
+                sorted_genome_pools_desc, progress=gen / NGENS
+            )
+
+        reset_games(game_pools, next_genome_pools)
+        pygame.time.delay(1000)
 
         if gen == NGENS:
             break
