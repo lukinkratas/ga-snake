@@ -38,9 +38,9 @@ NPOOLS = 4
 BEST_GENOMES_DIR = Path("best_genomes")
 
 SHAPE = (len(GAController.FEATURE_NAMES), len(DIRECTIONS))
-VECS_TO_APPLE = np.array(DeterministicApple._COORDS) - np.array(
-    [Snake.INIT_HEAD_COORDS, *DeterministicApple._COORDS[:-1]]
-)
+# VECS_TO_APPLE = np.array(DeterministicApple._COORDS) - np.array(
+#     [Snake.INIT_HEAD_COORDS, *DeterministicApple._COORDS[:-1]]
+# )
 
 
 def init_population(size: int, npools: int) -> list[GenomePool]:
@@ -52,24 +52,6 @@ def init_population(size: int, npools: int) -> list[GenomePool]:
 
     Returns: population - array of pools (arrays) containing genomes
     """
-    custom_genome = np.clip(
-        np.array(
-            [
-                [-1.0, 0.35, 0.35, 0.35],
-                [0.35, -1.0, 0.35, 0.35],
-                [0.35, 0.35, -1.0, 0.35],
-                [0.35, 0.35, 0.35, -1.0],
-                [1.0, 0, 0, 0],
-                [0, 1.0, 0, 0],
-                [0, 0, 1.0, 0],
-                [0, 0, 0, 1.0],
-            ]
-        )
-        + rng.uniform(-0.1, 0.1, size=SHAPE),
-        -1,
-        1,
-    )
-
     # # add prev best genome, if exists
     # best_genomes = (
     #     [
@@ -80,14 +62,7 @@ def init_population(size: int, npools: int) -> list[GenomePool]:
     #     if BEST_GENOMES_DIR.exists()
     #     else []
     # )
-    genomes = np.concatenate(
-        [
-            npools * [custom_genome],
-            # best_genomes,
-            rng.uniform(-1.0, 1.0, size=(size - npools, *SHAPE)),
-        ]
-    )
-    rng.shuffle(genomes)
+    genomes = rng.uniform(-1.0, 1.0, size=(size, *SHAPE))
     return [list(genome_pool) for genome_pool in np.array_split(genomes, npools)]
 
 
@@ -145,8 +120,8 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     Returns: fitness per game
     """
     score_factor = game.player.score
-    game_over_penalty = game.is_over
-    fitness = 10 * score_factor - game_over_penalty
+    game_over_penalty = int(game.is_over)
+    fitness = 10 * score_factor - 5 * game_over_penalty
     info = {"score_factor": score_factor, "game_over_penalty": game_over_penalty}
 
     # coords stepped penalty: 0 if lasted till max steps, otherwise linearly increasing
@@ -320,7 +295,7 @@ def get_next_genome_pools(
     for genome_pool in sorted_genome_pools:
         elites = genome_pool[:nelites]
         rest = genome_pool[nelites:]
-        top_half = genome_pool[nelites : int(0.5 * POP_SIZE)]
+        top_half = genome_pool[nelites : int(0.50 * POP_SIZE)]
 
         # keep elites unchanged
         new_genome_pool = elites.copy()
@@ -358,7 +333,6 @@ def crossover_genome_pools(sorted_genome_pools: list[GenomePool]) -> list[Genome
 
     npools = len(sorted_genome_pools)
     next_genome_pools = []
-
     ngenomes = int(POP_SIZE / npools)
 
     for idx in range(len(sorted_genome_pools)):
@@ -377,6 +351,12 @@ def crossover_genome_pools(sorted_genome_pools: list[GenomePool]) -> list[Genome
         next_genome_pools.append(new_genome_pool)
 
     return next_genome_pools
+
+
+def _get_alphas(pop_size: int) -> np.ndarray:
+    alphas = 63 * np.ones(pop_size)
+    alphas[-1] = 255
+    return alphas
 
 
 def main() -> None:
@@ -428,7 +408,7 @@ def main() -> None:
     best_fitness_history = []
     avg_fitness_history = []
     gen = 1
-    max_steps = 100
+    max_steps = 500
 
     renderer = Renderer(
         game_surf,
@@ -449,7 +429,7 @@ def main() -> None:
     while is_running:
         logger.info(f"New gen {gen}")
 
-        renderer.render_games(games[::-1])
+        renderer.render_games(games[::-1], alphas=_get_alphas(POP_SIZE))
         renderer.render_scoreboard(games, gen)
         pygame.display.update()
         pygame.time.delay(1000)
@@ -483,7 +463,7 @@ def main() -> None:
                     game.step()
 
             # render games based on orig order, sort only for scoreboard
-            renderer.render_games(games[::-1])
+            renderer.render_games(games[::-1], alphas=_get_alphas(POP_SIZE))
             eval_games(games, max_steps)
             sorted_games_desc = sorted(games, key=lambda g: g.fitness, reverse=True)
             renderer.render_scoreboard(sorted_games_desc, gen=gen)
@@ -535,7 +515,7 @@ def main() -> None:
         ]
 
         # every nth gen, crossover pools
-        if gen % 100 == 0:
+        if gen % 50 == 0:
             next_genome_pools = crossover_genome_pools(sorted_genome_pools_desc)
 
         else:

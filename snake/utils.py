@@ -1,19 +1,16 @@
-from itertools import product
-
 import numpy as np
 
 from .state import Wall
 
-# 8^3=512 colors
-COLORS = product(np.linspace(50, 200, 8), repeat=3)
+rng = np.random.default_rng(seed=42)
 
 
-def get_random_color() -> tuple[int, int, int]:
+def get_random_color() -> np.ndarray:
     """Get random color.
 
     Returns: RGB tuple
     """
-    return next(COLORS)
+    return rng.integers(50, 200, size=3)
 
 
 def get_squared_wall(ncols: int, nrows: int) -> Wall:

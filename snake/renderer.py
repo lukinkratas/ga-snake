@@ -336,7 +336,7 @@ class Renderer:
                 rect=head_rect,
             )
 
-    def render_games(self, games: list[GameBase]) -> None:
+    def render_games(self, games: list[GameBase], alphas: Sequence[int]) -> None:
         """Render games and corresponding walls, snakes and apples in given order on the screen.
 
         Args:
@@ -351,17 +351,10 @@ class Renderer:
             self.render_wall(wall)
 
         # separate for loop, bcs I want the snakes to be visible on top of wall
-        # active games with highest score render last
-        alpha_map = {True: 127, False: 63}
-        for game in games[:-1]:
-            alpha = alpha_map[game.snake.is_alive]
+        for game, alpha in zip(games, alphas):
+            alpha = alpha if game.snake.is_alive else 31
             self.render_snake(game.snake, alpha)
             self.render_apple(game.apple, alpha)
-
-        best_game = games[-1]
-        alpha = 255
-        self.render_snake(best_game.snake, alpha, name=best_game.player.name)
-        self.render_apple(best_game.apple, alpha)
 
     def render_player_row(self, game: GameBase, row_rect: pygame.Rect) -> None:
         """Render row per game/player in the scoreboard.
@@ -487,7 +480,7 @@ class Renderer:
             xs, avg_fitness_history, label="avg", color="tab:orange", linewidth=2.0
         )
 
-        self.history_ax.set_title("Fitness per Generation")
+        self.history_ax.set_title("Fitness per Generation", fontweight="bold")
         self.history_ax.set_xlabel("Generation", fontsize=self.font_size)
         self.history_ax.set_ylabel("Fitness", fontsize=self.font_size)
         self.history_ax.legend(loc="upper left", fontsize=self.font_size)
@@ -522,7 +515,7 @@ class Renderer:
 
             xs = genome[:, idx]
             # ax.scatter(xs, feature_names, s=100 * np.abs(xs), alpha=1.0)
-            ax.plot(xs, ys, marker="o", linestyle="")
+            ax.plot(xs, ys, marker="o", linestyle="", color=color)
 
             ax.set_title(direction.capitalize(), fontsize=self.font_size)
             ax.set_xlim(min(*xs, -1), max(*xs, 1))
@@ -531,7 +524,7 @@ class Renderer:
         title = "Last Best Genome"
         if name:
             title += f" {name}"
-        self.genome_fig.suptitle(title, color=color)
+        self.genome_fig.suptitle(title, color=color, fontweight="bold")
         self.genome_fig.tight_layout(rect=[0.20, 0.05, 0.95, 0.95])
 
         self.genome_fig.canvas.draw()

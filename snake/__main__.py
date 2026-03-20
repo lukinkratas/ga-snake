@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import pygame
 
 from snake.engine import HumanController, HumanGame, Player
@@ -99,7 +100,7 @@ def main() -> None:
         scoreboard_row_size=scoreboard_row_size,
     )
 
-    renderer.render_games(games)
+    renderer.render_games(games, alphas=255 * np.ones(NPLAYERS))
     renderer.render_scoreboard(games)
     pygame.display.update()
 
@@ -132,7 +133,7 @@ def main() -> None:
 
                 game.step()
 
-            renderer.render_games(games)
+            renderer.render_games(games, alphas=255 * np.ones(NPLAYERS))
             sorted_games_desc = sorted(
                 games,
                 key=lambda g: (not g.is_over, g.player.score),

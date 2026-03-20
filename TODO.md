@@ -1,5 +1,11 @@
-- [ ] genomes csv with score
+- [ ] refactor game steps
+- [ ] remove game has started from GAGame?
+- [ ] add sound fx
+- [ ] render x eyes, when snake dead
+- [ ] color only in player class?
+- [ ] remove npools?
 - [ ] lint
+- [x] solve alpha for ga_train and human play
 - [x] scoreboard limit, but genomes can exceed
 - [x] adjust alpha for rendering
 - [x] genome plot color based on last best genome

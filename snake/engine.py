@@ -148,46 +148,46 @@ class GAController:
             else np.float64(0)
         ) / available_ncols
 
-        wall_up_rects_ys = np.array(
+        wall_upper_rects_ys = np.array(
             [c[1] for c in wall.coords if c[0] == head_x and c[1] < head_y]
         )
         wall_danger_up = (
-            1 - np.min(head_y - 1 - wall_up_rects_ys)
-            if wall_up_rects_ys.size != 0
+            1 - np.min(head_y - 1 - wall_upper_rects_ys)
+            if wall_upper_rects_ys.size != 0
             else np.float64(0)
         ) / available_nrows
 
-        body_up_rects_ys = np.array(
+        body_upper_rects_ys = np.array(
             [c[1] for c in snake.body_coords if c[0] == head_x and c[1] < head_y]
         )
         body_danger_up = (
-            1 - np.min(head_y - 1 - body_up_rects_ys)
-            if body_up_rects_ys.size != 0
+            1 - np.min(head_y - 1 - body_upper_rects_ys)
+            if body_upper_rects_ys.size != 0
             else np.float64(0)
         ) / available_nrows
 
-        wall_down_rects_ys = np.array(
+        wall_bottom_rects_ys = np.array(
             [c[1] for c in wall.coords if c[0] == head_x and c[1] > head_y]
         )
         wall_danger_down = (
-            1 - np.min(wall_down_rects_ys - head_y - 1)
-            if wall_down_rects_ys.size != 0
+            1 - np.min(wall_bottom_rects_ys - head_y - 1)
+            if wall_bottom_rects_ys.size != 0
             else np.float64(0)
         ) / available_nrows
 
-        body_down_rects_ys = np.array(
+        body_bottom_rects_ys = np.array(
             [c[1] for c in snake.body_coords if c[0] == head_x and c[1] > head_y]
         )
         body_danger_down = (
-            1 - np.min(body_down_rects_ys - head_y - 1)
-            if body_down_rects_ys.size != 0
+            1 - np.min(body_bottom_rects_ys - head_y - 1)
+            if body_bottom_rects_ys.size != 0
             else np.float64(0)
         ) / available_nrows
 
-        danger_right = np.min([wall_danger_right, body_danger_right])
-        danger_left = np.min([wall_danger_left, body_danger_left])
-        danger_up = np.min([wall_danger_up, body_danger_up])
-        danger_down = np.min([wall_danger_down, body_danger_down])
+        danger_right = np.max([wall_danger_right, body_danger_right])
+        danger_left = np.max([wall_danger_left, body_danger_left])
+        danger_up = np.max([wall_danger_up, body_danger_up])
+        danger_down = np.max([wall_danger_down, body_danger_down])
 
         # Distances to apple
         apple_dx, apple_dy = (apple.coords - snake.head_coords) / np.array(
