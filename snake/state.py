@@ -10,7 +10,7 @@ from .const import LEFT, RIGHT
 logger = logging.getLogger(__name__)
 
 
-class AppleBase(ABC):
+class Apple(ABC):
     def __init__(self) -> None:
         self.reset()
 
@@ -25,7 +25,7 @@ class AppleBase(ABC):
         self.idx += 1
 
 
-class RandomApple(AppleBase):
+class RandomApple(Apple):
     INIT_COORDS = np.array([20, 10])
 
     def __init__(self) -> None:
@@ -42,7 +42,7 @@ class RandomApple(AppleBase):
         super().move()
 
 
-class DeterministicApple(AppleBase):
+class DeterministicApple(Apple):
     _COORDS = [
         np.array([20, 10]),
         # 2 - 8: dist 4, clockwise

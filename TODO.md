@@ -1,11 +1,9 @@
-- [ ] adjust the next gen distribution
-- [ ] adjust mut scale and mut rate to non binary
-- [ ] test binary apple feature ?
-- [ ] mutation, crossover - using random, choice, not np
-- [ ] crossover random not numpy
-- [ ] add sound fx
-- [ ] render x eyes, when snake dead
 - [ ] lint
+- [ ] test binary apple feature ?
+- [x] update play ang main with init game from train
+- [x] mutation, crossover - using random, choice, not np
+- [x] adjust mut scale and mut rate to non binary
+- [x] adjust the next gen distribution
 - [x]remove npools?
   - [x] + fitness as separate array again
 - [x] remove steps reward/penalty? I want to gather the apple is quick as possible, isnt't it?

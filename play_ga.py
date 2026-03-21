@@ -69,17 +69,18 @@ def init_games(genomes: list[np.ndarray]) -> list[GAGame]:
     """
     # common wall for all games
     wall = get_squared_wall(NCOLS, NROWS)
-    games = []
-    for idx, genome in enumerate(genomes, start=1):
+
+    def init_game(genome: np.ndarray, player_name: str | None = NOne) -> GAGame:
         color = get_random_color()
         controller = GAController(NCOLS, NROWS, genome)
-        player = Player(color, controller, name=f"G{idx}")
+        player = Player(color, controller, player_name)
         snake = Snake()
         apple = RandomApple()
-        game = GAGame(NCOLS, NROWS, player, wall, snake, apple)
-        games.append(game)
+        return GAGame(NCOLS, NROWS, player, wall, snake, apple)
 
-    return games
+    return [
+        init_game(genome, f"G{gidx}") for gidx, genome in enumerate(genomes, start=1)
+    ]
 
 
 def start_games(games: list[GAGame]) -> None:

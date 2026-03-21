@@ -22,23 +22,22 @@ FPS = 15
 NPLAYERS = 3
 
 
-def init_games() -> list[HumanGame]:
+def init_games(nplayers: int) -> list[HumanGame]:
     """Initialize games with it's assets - player, controller, wall, snake and apple.
 
     Returns: list of games
     """
     wall = get_squared_wall(NCOLS, NROWS)
-    games = []
-    for idx in range(NPLAYERS):
+
+    def init_game(player_name: str | None = None) -> HumanGame:
         color = get_random_color()
         controller = HumanController()
-        player = Player(color, controller, name=str(idx + 1))
+        player = Player(color, controller, player_name)
         snake = Snake()
         apple = RandomApple()
-        game = HumanGame(NCOLS, NROWS, player, wall, snake, apple)
-        games.append(game)
+        return HumanGame(NCOLS, NROWS, player, wall, snake, apple)
 
-    return games
+    return [init_game(str(idx + 1)) for idx in range(nplayers)]
 
 
 def start_games(games: list[HumanGame]) -> None:
@@ -86,7 +85,7 @@ def main() -> None:
     score_rect = pygame.Rect(0, HEIGHT, WIDTH, score_height)
     score_surf = win.subsurface(score_rect)
 
-    games = init_games()
+    games = init_games(NPLAYERS)
     renderer = Renderer(
         game_surf,
         score_surf,

@@ -13,8 +13,8 @@ from .const import (
     RIGHT,
     UP,
 )
-from .engine import GAController, GameBase, HumanController
-from .state import AppleBase, Snake, Wall
+from .engine import GAController, Game, HumanController
+from .state import Apple, Snake, Wall
 
 
 def render_circle(
@@ -262,7 +262,7 @@ class Renderer:
             )
 
     def render_apple(
-        self, apple: AppleBase, color: tuple[int, int, int], alpha: int
+        self, apple: Apple, color: tuple[int, int, int], alpha: int
     ) -> None:
         """Render apple on the screen.
 
@@ -345,7 +345,7 @@ class Renderer:
             )
 
     def render_games(
-        self, games: list[GameBase], alphas: Sequence[int] | None = None
+        self, games: list[Game], alphas: Sequence[int] | None = None
     ) -> None:
         """Render games and corresponding walls, snakes and apples in given order on the screen.
 
@@ -373,7 +373,7 @@ class Renderer:
             alpha = alpha if game.snake.is_alive else 31
             self.render_apple(game.apple, game.player.color, alpha)
 
-    def render_player_row(self, game: GameBase, row_rect: pygame.Rect) -> None:
+    def render_player_row(self, game: Game, row_rect: pygame.Rect) -> None:
         """Render row per game/player in the scoreboard.
 
         Args:
@@ -401,7 +401,7 @@ class Renderer:
             rect=row_rect,
         )
 
-    def render_scoreboard(self, games: list[GameBase], gen: str | None = None) -> None:
+    def render_scoreboard(self, games: list[Game], gen: str | None = None) -> None:
         """Render scoreboard including title and score per player on the screen.
 
         Args:

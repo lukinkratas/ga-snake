@@ -1,6 +1,5 @@
 import datetime
 import logging
-import random
 from pathlib import Path
 
 import numpy as np
@@ -25,7 +24,7 @@ WIDTH = NCOLS * GRID_SIZE
 HEIGHT = NROWS * GRID_SIZE
 
 FPS = 60
-POP_SIZE = 400
+NGENOMES = 400
 NGENS = 500
 NSTEPS = 300
 
@@ -59,7 +58,7 @@ def init_games(population: list[np.ndarray]) -> list[GAGame]:
     # common wall for all games
     wall = get_squared_wall(NCOLS, NROWS)
 
-    def init_game(genome: np.ndarray, player_name: str | None = None):
+    def init_game(genome: np.ndarray, player_name: str | None = None) -> GAGame:
         color = get_random_color()
         controller = GAController(NCOLS, NROWS, genome)
         player = Player(color, controller, player_name)
@@ -106,19 +105,16 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     # fitness -= steps_penalty
     # info["steps_penalty"] = steps_penalty
 
-    # if game.steps > 0:
-    #     # cycling penalty: 0 if all steps were unique, otherwise linearly increasing
-    #     cycling_penalty = (
-    #         1 - np.unique(game.coords_stepped, axis=0).shape[0] / game.steps
-    #     )
-    #     fitness -= 2 * cycling_penalty
-    #     info["cycling_penalty"] = cycling_penalty
+    # cycling penalty: 0 if all steps were unique, otherwise linearly increasing
+    cycling_penalty = 1 - np.unique(game.coords_stepped, axis=0).shape[0] / game.steps
+    fitness -= cycling_penalty
+    info["cycling_penalty"] = cycling_penalty
 
     # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance (diagonal), otherwise linearly decreasing
     apple_dist_penalty = linalg.norm(
         game.apple.coords - game.snake.head_coords, 2
     ) / linalg.norm([NCOLS, NROWS], 2)
-    fitness -= 0.1 * apple_dist_penalty
+    fitness -= apple_dist_penalty
     info["apple_dist_penalty"] = apple_dist_penalty
 
     # # apple dir penalty: 0 if all applied directions in the current apple hunt are are the same as vector between current and previous apple.
@@ -155,24 +151,6 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     return fitness
 
 
-# def sort_games_by_fitness(
-#     games: list[GAGame], fitness: list[float]
-# ) -> list[np.ndarray]:
-#     """Sort games by fitness in descencing order.
-#
-#     Args:
-#         games: list of games
-#         fitness: list of fitnesses
-#
-#     Returns: list of genomes sorted by fitness
-#     """
-#     # sort by fitness
-#     elite_idxs = np.argsort(fitness)[::-1]
-#     # select top 5 as elite
-#     return [games[idx] for idx in elite_idxs]
-#
-
-
 def mutate(genome: np.ndarray, progress: float) -> np.ndarray:
     """Mutate genome.
 
@@ -183,42 +161,22 @@ def mutate(genome: np.ndarray, progress: float) -> np.ndarray:
     Return: Mutated genome (array)
     """
     logger.debug("Mutating genome.")
+
     # mutation_rate = 0.2
-    # mutation_scale = 0.4
-
-    # mutation_rate = 0.2 + 0.2 * (1 - progress)
+    mutation_rate = 0.1 + 0.1 * (1 - progress)
     # mask = rng.uniform(0, 1, genome.shape) < mutation_rate
-    # mask = rng.random(genome.shape) < mutation_rate
-    mask = rng.choice([True, False], size=SHAPE, p=[1 - progress, progress])
+    mask = rng.random(genome.shape) < mutation_rate
+    # mask = rng.choice([True, False], size=SHAPE, p=[1 - progress, progress])
 
-    mutation_scale = 0.1 + 0.4 * (1 - progress)
-    # noise = rng.uniform(-1, 1, genome.shape) * mutation_scale
-    noise = rng.choice([-1, 1], size=genome.shape) * mutation_scale
+    # mutation_scale = 0.4
+    mutation_scale = 0.2 + 0.2 * (1 - progress)
+    noise = rng.uniform(-1, 1, genome.shape) * mutation_scale
+    # noise = rng.choice([-1, 1], size=genome.shape) * mutation_scale
 
     new_arr = genome.copy()
     new_arr[mask] += noise[mask]
 
     return np.clip(new_arr, -1, 1)
-
-
-def get_mutated_genomes(
-    genomes_choice: list[np.ndarray], size: int, progress: float
-) -> list[np.ndarray]:
-    """Mutate genomes randomly chosen from list.
-
-    Args:
-        genomes_choice: choice list of genomes (arrays)
-        size: length of returned list of crossovered genomes
-        gen: current generation number, used for balancing exploration and exploitation
-
-    Returns: list of crossovered genomes (arrays)
-    """
-    genomes = []
-    for _ in range(size):
-        parent = random.choice(genomes_choice)
-        child_genome = mutate(parent, progress)
-        genomes.append(child_genome)
-    return genomes
 
 
 def crossover(genome_a: np.ndarray, genome_b: np.ndarray) -> np.ndarray:
@@ -235,60 +193,75 @@ def crossover(genome_a: np.ndarray, genome_b: np.ndarray) -> np.ndarray:
     return np.where(mask, genome_a, genome_b)
 
 
-def get_crossover_genomes(
-    genomes_a_choice: list[np.ndarray], genomes_b_choice: list[np.ndarray], size: int
-) -> list[np.ndarray]:
-    """Crossover genomes randomly chosen from lists.
-
-    Args:
-        genomes_a_choice: choice list of genomes (arrays)
-        genomes_b_choice: choice list of genomes (arrays)
-        size: length of returned list of crossovered genomes
-
-    Returns: list of crossovered genomes (arrays)
-    """
-    genomes = []
-    for _ in range(size):
-        parent_a = random.choice(genomes_a_choice)
-        parent_b = random.choice(genomes_b_choice)
-        child_genome = crossover(parent_a, parent_b)
-        genomes.append(child_genome)
-    return genomes
-
-
 def get_next_gen(
     sorted_population: list[np.ndarray], progress: float
 ) -> list[np.ndarray]:
     """Get next generation population by mutations and crossovers."""
-    # 10%
-    nelites = int(0.10 * POP_SIZE)
-    nimmigrants = int(0.10 * POP_SIZE)
+
+    def get_mutated_genomes(
+        genomes_choice: list[np.ndarray], size: int, progress: float
+    ) -> list[np.ndarray]:
+        """Mutate genomes randomly chosen from list.
+
+        Args:
+            genomes_choice: choice list of genomes (arrays)
+            size: length of returned list of crossovered genomes
+            gen: current generation number, used for balancing exploration and exploitation
+
+        Returns: list of crossovered genomes (arrays)
+        """
+        return [mutate(genome, progress) for genome in rng.choice(genomes_choice, size)]
+
+    def get_crossover_genomes(
+        genomes_a_choice: list[np.ndarray],
+        genomes_b_choice: list[np.ndarray],
+        size: int,
+    ) -> list[np.ndarray]:
+        """Crossover genomes randomly chosen from lists.
+
+        Args:
+            genomes_a_choice: choice list of genomes (arrays)
+            genomes_b_choice: choice list of genomes (arrays)
+            size: length of returned list of crossovered genomes
+
+        Returns: list of crossovered genomes (arrays)
+        """
+        return [
+            crossover(parent_a, parent_b)
+            for parent_a, parent_b in zip(
+                rng.choice(genomes_a_choice, size), rng.choice(genomes_b_choice, size)
+            )
+        ]
+
+    ngenomes = len(sorted_population)
+    nelites = int(0.05 * ngenomes)
 
     elites = sorted_population[:nelites]
     rest = sorted_population[nelites:]
-    top_half = sorted_population[nelites : int(0.50 * POP_SIZE)]
+    top_half = sorted_population[nelites : int(0.50 * ngenomes)]
 
     # keep elites unchanged
     next_gen = elites.copy()
 
+    mutated_genomes = get_mutated_genomes(
+        elites, size=int(0.10 * ngenomes), progress=progress
+    )
+    next_gen.extend(mutated_genomes)
+
+    mutated_genomes = get_mutated_genomes(
+        top_half, size=int(0.35 * ngenomes), progress=progress
+    )
+    next_gen.extend(mutated_genomes)
+
+    crossover_genomes = get_crossover_genomes(elites, elites, size=int(0.10 * ngenomes))
+    next_gen.extend(crossover_genomes)
+
+    crossover_genomes = get_crossover_genomes(elites, rest, size=int(0.35 * ngenomes))
+    next_gen.extend(crossover_genomes)
+
     # inject random immigrants
+    nimmigrants = int(0.05 * ngenomes)
     next_gen.extend(rng.uniform(-1.0, 1.0, size=(nimmigrants, *SHAPE)))
-
-    mutated_genomes = get_mutated_genomes(
-        elites, size=int(0.15 * POP_SIZE), progress=progress
-    )
-    next_gen.extend(mutated_genomes)
-
-    mutated_genomes = get_mutated_genomes(
-        top_half, size=int(0.15 * POP_SIZE), progress=progress
-    )
-    next_gen.extend(mutated_genomes)
-
-    crossover_genomes = get_crossover_genomes(elites, elites, size=int(0.3 * POP_SIZE))
-    next_gen.extend(crossover_genomes)
-
-    crossover_genomes = get_crossover_genomes(elites, rest, size=int(0.2 * POP_SIZE))
-    next_gen.extend(crossover_genomes)
 
     return next_gen
 
@@ -338,7 +311,7 @@ def main() -> None:
     )
     genome_plot_surf = win.subsurface(genome_plot_rect)
 
-    population = init_population(POP_SIZE)
+    population = init_population(NGENOMES)
     # game_pools and games flatten copy?
     games = init_games(population)
 
@@ -366,7 +339,7 @@ def main() -> None:
     for gen in range(1, NGENS + 1):
         logger.info(f"New gen {gen}")
 
-        renderer.render_games(games[::-1], alphas=_get_alphas(POP_SIZE))
+        renderer.render_games(games[::-1], alphas=_get_alphas(NGENOMES))
         renderer.render_scoreboard(games, gen)
         pygame.display.update()
         pygame.time.delay(1000)
@@ -392,7 +365,7 @@ def main() -> None:
                     game.step()
 
             # render games based on orig order
-            renderer.render_games(games[::-1], alphas=_get_alphas(POP_SIZE))
+            renderer.render_games(games[::-1], alphas=_get_alphas(NGENOMES))
 
             # render scoreboard sorted
             fitness = [eval_fitness(game, NSTEPS) for game in games]

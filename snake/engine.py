@@ -6,7 +6,7 @@ import numpy as np
 import pygame
 
 from .const import DIRECTIONS, DOWN, LEFT, RIGHT, UP
-from .state import AppleBase, DeterministicApple, RandomApple, Snake, Wall
+from .state import Apple, DeterministicApple, RandomApple, Snake, Wall
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class GAController:
 
         return list(DIRECTIONS.values())[move_idx]
 
-    def eval_state(self, snake: Snake, apple: AppleBase, wall: Wall) -> np.ndarray:
+    def eval_state(self, snake: Snake, apple: Apple, wall: Wall) -> np.ndarray:
         """Evaluate the state of snake, apple and wall.
 
         Args:
@@ -244,7 +244,7 @@ class Player:
         self.score = 0
 
 
-class GameBase(ABC):
+class Game(ABC):
     def __init__(
         self,
         ncols: int,
@@ -252,7 +252,7 @@ class GameBase(ABC):
         player: Player,
         wall: Wall,
         snake: Snake,
-        apple: AppleBase,
+        apple: Apple,
     ) -> None:
         self.ncols = ncols
         self.nrows = nrows
@@ -317,7 +317,7 @@ class GameBase(ABC):
         pass
 
 
-class HumanGame(GameBase):
+class HumanGame(Game):
     def __init__(
         self,
         ncols: int,
@@ -325,7 +325,7 @@ class HumanGame(GameBase):
         player: Player,
         wall: Wall,
         snake: Snake,
-        apple: AppleBase,
+        apple: Apple,
     ) -> None:
         super().__init__(ncols, nrows, player, wall, snake, apple)
 
@@ -341,7 +341,7 @@ class HumanGame(GameBase):
         self.eval_state()
 
 
-class GAGame(GameBase):
+class GAGame(Game):
     def __init__(
         self,
         ncols: int,
@@ -349,7 +349,7 @@ class GAGame(GameBase):
         player: Player,
         wall: Wall,
         snake: Snake,
-        apple: AppleBase,
+        apple: Apple,
     ) -> None:
         super().__init__(ncols, nrows, player, wall, snake, apple)
 
@@ -360,7 +360,7 @@ class GAGame(GameBase):
     def reset(self) -> None:
         """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
         self.coords_stepped = []
-        self.dirs_from_last_apple = [self.snake.head_dir]
+        # self.dirs_from_last_apple = [self.snake.head_dir]
         super().reset()
 
     def step(self) -> None:
@@ -370,4 +370,4 @@ class GAGame(GameBase):
         self.snake.move(direction)
         self.eval_state()
         self.coords_stepped.append(self.snake.head_coords.copy())
-        self.dirs_from_last_apple.append(self.snake.head_dir)
+        # self.dirs_from_last_apple.append(self.snake.head_dir)
