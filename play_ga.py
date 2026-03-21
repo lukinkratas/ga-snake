@@ -37,10 +37,10 @@ def init_genomes() -> list[np.ndarray]:
     custom_genome = np.clip(
         np.array(
             [
-                [-1.0, 0.35, 0.35, 0.35],
-                [0.35, -1.0, 0.35, 0.35],
-                [0.35, 0.35, -1.0, 0.35],
-                [0.35, 0.35, 0.35, -1.0],
+                [-0.3, 0.1, 0.1, 0.1],
+                [0.1, -0.3, 0.1, 0.1],
+                [0.1, 0.1, -0.3, 0.1],
+                [0.1, 0.1, 0.1, -0.3],
                 [1.0, 0, 0, 0],
                 [0, 1.0, 0, 0],
                 [0, 0, 1.0, 0],
@@ -173,8 +173,13 @@ def main() -> None:
 
                 game.step()
 
-            renderer.render_games(games)
-            renderer.render_scoreboard(games)
+            renderer.render_games(games, alphas=255 * np.ones(NPLAYERS))
+            sorted_games_desc = sorted(
+                games,
+                key=lambda g: (not g.is_over, g.player.score),
+                reverse=True,
+            )
+            renderer.render_scoreboard(sorted_games_desc)
 
         if is_paused and DEBUG:
             renderer.render_coords()

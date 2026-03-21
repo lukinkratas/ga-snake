@@ -113,76 +113,84 @@ class GAController:
             [c[0] for c in wall.coords if c[1] == head_y and c[0] > head_x]
         )
         # danger: 1 if wall is next to head, linearly decreasing
-        wall_danger_right = (
-            1 - np.min(wall_right_rects_xs - head_x - 1)
-            if wall_right_rects_xs.size != 0
+        if wall_right_rects_xs.size != 0:
             # No bodies rects found on the right
-            else np.float64(0)
-        ) / available_ncols
+            wall_danger_right = (
+                1 - np.min(wall_right_rects_xs - head_x - 1) / available_ncols
+            )
+        else:
+            wall_danger_right = np.float64(0)
 
         # Distances to snake body
         body_right_rects_xs = np.array(
             [c[0] for c in snake.body_coords if c[1] == head_y and c[0] > head_x]
         )
-        body_danger_right = (
-            1 - np.min(body_right_rects_xs - head_x - 1)
-            if body_right_rects_xs.size != 0
-            else np.float64(0)
-        ) / available_ncols
+        if body_right_rects_xs.size != 0:
+            body_danger_right = (
+                1 - np.min(body_right_rects_xs - head_x - 1) / available_ncols
+            )
+        else:
+            body_danger_right = np.float64(0)
 
         wall_left_rects_xs = np.array(
             [c[0] for c in wall.coords if c[1] == head_y and c[0] < head_x]
         )
-        wall_danger_left = (
-            1 - np.min(head_x - 1 - wall_left_rects_xs)
-            if wall_left_rects_xs.size != 0
-            else np.float64(0)
-        ) / available_ncols
+        if wall_left_rects_xs.size != 0:
+            wall_danger_left = (
+                1 - np.min(head_x - 1 - wall_left_rects_xs) / available_ncols
+            )
+        else:
+            wall_danger_left = np.float64(0)
 
         body_left_rects_xs = np.array(
             [c[0] for c in snake.body_coords if c[1] == head_y and c[0] < head_x]
         )
-        body_danger_left = (
-            1 - np.min(head_x - 1 - body_left_rects_xs)
-            if body_left_rects_xs.size != 0
-            else np.float64(0)
-        ) / available_ncols
+        if body_left_rects_xs.size != 0:
+            body_danger_left = (
+                1 - np.min(head_x - 1 - body_left_rects_xs) / available_ncols
+            )
+        else:
+            body_danger_left = np.float64(0)
 
         wall_upper_rects_ys = np.array(
             [c[1] for c in wall.coords if c[0] == head_x and c[1] < head_y]
         )
-        wall_danger_up = (
-            1 - np.min(head_y - 1 - wall_upper_rects_ys)
-            if wall_upper_rects_ys.size != 0
-            else np.float64(0)
-        ) / available_nrows
+        if wall_upper_rects_ys.size != 0:
+            wall_danger_up = (
+                1 - np.min(head_y - 1 - wall_upper_rects_ys) / available_nrows
+            )
+        else:
+            wall_danger_up = np.float64(0)
 
         body_upper_rects_ys = np.array(
             [c[1] for c in snake.body_coords if c[0] == head_x and c[1] < head_y]
         )
-        body_danger_up = (
-            1 - np.min(head_y - 1 - body_upper_rects_ys)
-            if body_upper_rects_ys.size != 0
-            else np.float64(0)
-        ) / available_nrows
+        if body_upper_rects_ys.size != 0:
+            body_danger_up = (
+                1 - np.min(head_y - 1 - body_upper_rects_ys) / available_nrows
+            )
+        else:
+            body_danger_up = np.float64(0)
 
         wall_bottom_rects_ys = np.array(
             [c[1] for c in wall.coords if c[0] == head_x and c[1] > head_y]
         )
-        wall_danger_down = (
-            1 - np.min(wall_bottom_rects_ys - head_y - 1)
-            if wall_bottom_rects_ys.size != 0
-            else np.float64(0)
-        ) / available_nrows
+        if wall_bottom_rects_ys.size != 0:
+            wall_danger_down = (
+                1 - np.min(wall_bottom_rects_ys - head_y - 1) / available_nrows
+            )
+        else:
+            wall_danger_down = np.float64(0)
 
         body_bottom_rects_ys = np.array(
             [c[1] for c in snake.body_coords if c[0] == head_x and c[1] > head_y]
         )
-        body_danger_down = (
-            1 - np.min(body_bottom_rects_ys - head_y - 1)
-            if body_bottom_rects_ys.size != 0
-            else np.float64(0)
-        ) / available_nrows
+        if body_bottom_rects_ys.size != 0:
+            body_danger_down = (
+                1 - np.min(body_bottom_rects_ys - head_y - 1) / available_nrows
+            )
+        else:
+            body_danger_down = np.float64(0)
 
         danger_right = np.max([wall_danger_right, body_danger_right])
         danger_left = np.max([wall_danger_left, body_danger_left])

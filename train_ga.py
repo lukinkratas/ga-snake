@@ -426,7 +426,7 @@ def main() -> None:
 
     games = list(itertools.chain.from_iterable(game_pools))
     is_running = True
-    while is_running:
+    for gen in range(1, NGENS + 1):
         logger.info(f"New gen {gen}")
 
         renderer.render_games(games[::-1], alphas=_get_alphas(POP_SIZE))
@@ -525,11 +525,6 @@ def main() -> None:
 
         reset_games(game_pools, next_genome_pools)
         pygame.time.delay(1000)
-
-        if gen == NGENS:
-            break
-
-        gen += 1
 
     pygame.quit()
 
