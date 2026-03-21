@@ -361,7 +361,6 @@ class GAGame(GameBase):
         """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
         self.coords_stepped = []
         self.dirs_from_last_apple = [self.snake.head_dir]
-        self.fitness = None
         super().reset()
 
     def step(self) -> None:

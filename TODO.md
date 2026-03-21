@@ -1,10 +1,13 @@
+- [ ] adjust the next gen distribution
+- [ ] adjust mut scale and mut rate to non binary
+- [ ] test binary apple feature ?
 - [ ] mutation, crossover - using random, choice, not np
 - [ ] crossover random not numpy
 - [ ] add sound fx
 - [ ] render x eyes, when snake dead
-- [ ] remove npools?
-  - [ ] + fitness as separate array again
 - [ ] lint
+- [x]remove npools?
+  - [x] + fitness as separate array again
 - [x] remove steps reward/penalty? I want to gather the apple is quick as possible, isnt't it?
 - [x] refactor game steps as constant?
 - [x] color only in player class?
