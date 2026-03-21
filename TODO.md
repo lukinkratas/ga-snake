@@ -1,4 +1,3 @@
-- [ ] remove steps reward/penalty? I want to gather the apple is quick as possible, isnt't it?
 - [ ] mutation, crossover - using random, choice, not np
 - [ ] crossover random not numpy
 - [ ] add sound fx
@@ -6,6 +5,7 @@
 - [ ] remove npools?
   - [ ] + fitness as separate array again
 - [ ] lint
+- [x] remove steps reward/penalty? I want to gather the apple is quick as possible, isnt't it?
 - [x] refactor game steps as constant?
 - [x] color only in player class?
 - [x] remove game has started from GAGame?

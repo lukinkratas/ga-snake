@@ -125,18 +125,18 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     fitness = 10 * score_factor - 5 * game_over_penalty
     info = {"score_factor": score_factor, "game_over_penalty": game_over_penalty}
 
-    # coords stepped penalty: 0 if lasted till max steps, otherwise linearly increasing
-    steps_penalty = 1 - game.steps / max_steps
-    fitness -= steps_penalty
-    info["steps_penalty"] = steps_penalty
+    # # coords stepped penalty: 0 if lasted till max steps, otherwise linearly increasing
+    # steps_penalty = 1 - game.steps / max_steps
+    # fitness -= steps_penalty
+    # info["steps_penalty"] = steps_penalty
 
-    # cycling penalty: 0 if all steps were unique, otherwise linearly increasing
-    if game.steps > 0:
-        cycling_penalty = (
-            1 - np.unique(game.coords_stepped, axis=0).shape[0] / game.steps
-        )
-        fitness -= 2 * cycling_penalty
-        info["cycling_penalty"] = cycling_penalty
+    # if game.steps > 0:
+    #     # cycling penalty: 0 if all steps were unique, otherwise linearly increasing
+    #     cycling_penalty = (
+    #         1 - np.unique(game.coords_stepped, axis=0).shape[0] / game.steps
+    #     )
+    #     fitness -= 2 * cycling_penalty
+    #     info["cycling_penalty"] = cycling_penalty
 
     # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance (diagonal), otherwise linearly decreasing
     apple_dist_penalty = linalg.norm(
