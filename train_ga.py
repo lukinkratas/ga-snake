@@ -84,8 +84,8 @@ def init_games(genome_pools: list[GenomePool]) -> list[GamePool]:
             color = get_random_color()
             controller = GAController(NCOLS, NROWS, genome)
             player = Player(color, controller, name=f"P{pidx}G{gidx}")
-            snake = Snake(color)
-            apple = DeterministicApple(color)
+            snake = Snake()
+            apple = DeterministicApple()
             game = GAGame(NCOLS, NROWS, player, wall, snake, apple)
             games.append(game)
 

@@ -74,8 +74,8 @@ def init_games(genomes: list[np.ndarray]) -> list[GAGame]:
         color = get_random_color()
         controller = GAController(NCOLS, NROWS, genome)
         player = Player(color, controller, name=f"G{idx}")
-        snake = Snake(color)
-        apple = RandomApple(color)
+        snake = Snake()
+        apple = RandomApple()
         game = GAGame(NCOLS, NROWS, player, wall, snake, apple)
         games.append(game)
 
@@ -173,12 +173,12 @@ def main() -> None:
 
                 game.step()
 
-            renderer.render_games(games, alphas=255 * np.ones(NPLAYERS))
             sorted_games_desc = sorted(
                 games,
                 key=lambda g: (not g.is_over, g.player.score),
                 reverse=True,
             )
+            renderer.render_games(sorted_games_desc[::-1])
             renderer.render_scoreboard(sorted_games_desc)
 
         if is_paused and DEBUG:

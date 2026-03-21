@@ -1,6 +1,5 @@
 import logging
 
-import numpy as np
 import pygame
 
 from snake.engine import HumanController, HumanGame, Player
@@ -34,8 +33,8 @@ def init_games() -> list[HumanGame]:
         color = get_random_color()
         controller = HumanController()
         player = Player(color, controller, name=str(idx + 1))
-        snake = Snake(color)
-        apple = RandomApple(color)
+        snake = Snake()
+        apple = RandomApple()
         game = HumanGame(NCOLS, NROWS, player, wall, snake, apple)
         games.append(game)
 
@@ -100,7 +99,7 @@ def main() -> None:
         scoreboard_row_size=scoreboard_row_size,
     )
 
-    renderer.render_games(games, alphas=255 * np.ones(NPLAYERS))
+    renderer.render_games(games)
     renderer.render_scoreboard(games)
     pygame.display.update()
 
@@ -133,12 +132,12 @@ def main() -> None:
 
                 game.step()
 
-            renderer.render_games(games, alphas=255 * np.ones(NPLAYERS))
             sorted_games_desc = sorted(
                 games,
                 key=lambda g: (not g.is_over, g.player.score),
                 reverse=True,
             )
+            renderer.render_games(sorted_games_desc[::-1])
             renderer.render_scoreboard(sorted_games_desc)
 
         if is_paused and DEBUG:

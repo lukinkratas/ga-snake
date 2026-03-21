@@ -261,7 +261,9 @@ class Renderer:
                 radius=self.rect_radius,
             )
 
-    def render_apple(self, apple: AppleBase, alpha: int) -> None:
+    def render_apple(
+        self, apple: AppleBase, color: tuple[int, int, int], alpha: int
+    ) -> None:
         """Render apple on the screen.
 
         Args:
@@ -272,7 +274,7 @@ class Renderer:
         render_circle(
             surf=self.game_surf,
             rect=rect,
-            color=(*apple.color, alpha),
+            color=(*color, alpha),
             line_color=(25, 25, 25, alpha),
             line_width=self.line_width,
             radius=int(0.8 * self.grid_size / 2),
@@ -285,7 +287,13 @@ class Renderer:
             rect=rect,
         )
 
-    def render_snake(self, snake: Snake, alpha: int, name: str | None = None) -> None:
+    def render_snake(
+        self,
+        snake: Snake,
+        color: tuple[int, int, int],
+        alpha: int,
+        name: str | None = None,
+    ) -> None:
         """Render snake on the screen.
 
         Args:
@@ -294,7 +302,7 @@ class Renderer:
         extra_radius = 10
         common_kwargs = {
             "surf": self.game_surf,
-            "color": (*snake.color, alpha),
+            "color": (*color, alpha),
             "line_color": (25, 25, 25, alpha),
             "line_width": self.line_width,
             "radius": self.rect_radius,
@@ -336,12 +344,17 @@ class Renderer:
                 rect=head_rect,
             )
 
-    def render_games(self, games: list[GameBase], alphas: Sequence[int]) -> None:
+    def render_games(
+        self, games: list[GameBase], alphas: Sequence[int] | None = None
+    ) -> None:
         """Render games and corresponding walls, snakes and apples in given order on the screen.
 
         Args:
             games: list of games
         """
+        if alphas is None:
+            alphas = 255 * np.ones(len(games))
+
         self.game_surf.fill(color=(175,) * 3)
         self.score_surf.fill(color=(25,) * 3)
         self.render_grid()
@@ -353,12 +366,12 @@ class Renderer:
         # separate for loop, bcs I want the snakes to be visible on top of wall
         for game, alpha in zip(games, alphas):
             alpha = alpha if game.snake.is_alive else 31
-            self.render_snake(game.snake, alpha)
+            self.render_snake(game.snake, game.player.color, alpha)
 
         # separate for loop, bcs I want the apples to be visible on snakes
         for game, alpha in zip(games, alphas):
             alpha = alpha if game.snake.is_alive else 31
-            self.render_apple(game.apple, alpha)
+            self.render_apple(game.apple, game.player.color, alpha)
 
     def render_player_row(self, game: GameBase, row_rect: pygame.Rect) -> None:
         """Render row per game/player in the scoreboard.

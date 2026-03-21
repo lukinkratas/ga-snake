@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class AppleBase(ABC):
-    def __init__(self, color: tuple[int, int, int]) -> None:
-        self.color = color
+    def __init__(self) -> None:
+        self.reset()
 
     @abstractmethod
     def reset(self) -> None:
@@ -28,9 +28,8 @@ class AppleBase(ABC):
 class RandomApple(AppleBase):
     INIT_COORDS = np.array([20, 10])
 
-    def __init__(self, color: tuple[int, int, int]) -> None:
-        super().__init__(color)
-        self.reset()
+    def __init__(self) -> None:
+        super().__init__()
 
     def reset(self) -> None:
         """Reset the apple to default position."""
@@ -80,9 +79,8 @@ class DeterministicApple(AppleBase):
         np.array([16, 10]),
     ]
 
-    def __init__(self, color: tuple[int, int, int]) -> None:
-        super().__init__(color)
-        self.reset()
+    def __init__(self) -> None:
+        super().__init__()
 
     def reset(self) -> None:
         """Reset the apple to default position."""
@@ -106,8 +104,7 @@ class Snake:
         INIT_HEAD_COORDS + 2 * LEFT,
     ]
 
-    def __init__(self, color: tuple[int, int, int]) -> None:
-        self.color = color
+    def __init__(self) -> None:
         self.reset()
 
     def reset(self) -> None:

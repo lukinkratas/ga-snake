@@ -1,12 +1,12 @@
 - [ ] remove steps reward/penalty? I want to gather the apple is quick as possible, isnt't it?
 - [ ] remove game has started from GAGame?
 - [ ] mutation, crossover - using random, choice, not np
-- [ ] refactor game steps
+- [ ] refactor game steps as constant?
 - [ ] fitness as separate array again
 - [ ] crossover random not numpy
 - [ ] add sound fx
 - [ ] render x eyes, when snake dead
-- [ ] color only in player class?
+- [x] color only in player class?
 - [ ] remove npools?
 - [ ] lint
 - [x] solve alpha for ga_train and human play
