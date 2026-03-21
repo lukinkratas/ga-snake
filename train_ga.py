@@ -32,6 +32,7 @@ HEIGHT = NROWS * GRID_SIZE
 FPS = 60
 POP_SIZE = 400
 NGENS = 500
+NSTEPS = 300
 # divide genome into pools, train separately, crossover between only after some time.
 NPOOLS = 4
 
@@ -407,8 +408,6 @@ def main() -> None:
     video_dir.mkdir()
     best_fitness_history = []
     avg_fitness_history = []
-    gen = 1
-    max_steps = 500
 
     renderer = Renderer(
         game_surf,
@@ -435,12 +434,8 @@ def main() -> None:
         pygame.time.delay(1000)
         recorder = ScreenRecorder(FPS).start_rec()
 
-        # every nth gen, adjust max steps: 100, 200, 300, etc.
-        if gen % 100 == 0:
-            max_steps += 100
-
         # gen loop
-        for step in range(max_steps):
+        for step in range(NSTEPS):
             clock.tick(FPS)
 
             for event in pygame.event.get():
@@ -455,17 +450,18 @@ def main() -> None:
                 break
 
             for game in games:
-                if not game.is_over and game.steps < max_steps:
+                if not game.is_over:
                     game.step()
 
             # render games based on orig order, sort only for scoreboard
             renderer.render_games(games[::-1], alphas=_get_alphas(POP_SIZE))
-            eval_games(games, max_steps)
+            eval_games(games, NSTEPS)
             sorted_games_desc = sorted(games, key=lambda g: g.fitness, reverse=True)
             renderer.render_scoreboard(sorted_games_desc, gen=gen)
             pygame.display.update()
 
-            if all(game.is_over or game.steps >= max_steps for game in games):
+            # if all game are over prior to finishing all NSTEPS
+            if all(game.is_over for game in games):
                 break
 
         recorder.stop_rec()
@@ -475,7 +471,7 @@ def main() -> None:
             # break before the mutation and crossover
             break
 
-        eval_games(games, max_steps)
+        eval_games(games, NSTEPS)
         games.sort(key=lambda g: g.fitness, reverse=True)
         best_game = games[0]
 
