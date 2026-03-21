@@ -354,6 +354,10 @@ class Renderer:
         for game, alpha in zip(games, alphas):
             alpha = alpha if game.snake.is_alive else 31
             self.render_snake(game.snake, alpha)
+
+        # separate for loop, bcs I want the apples to be visible on snakes
+        for game, alpha in zip(games, alphas):
+            alpha = alpha if game.snake.is_alive else 31
             self.render_apple(game.apple, alpha)
 
     def render_player_row(self, game: GameBase, row_rect: pygame.Rect) -> None:

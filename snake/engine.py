@@ -269,7 +269,6 @@ class GameBase(ABC):
 
     def reset(self) -> None:
         """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
-        self.has_started = False
         self.player.reset()
         self.snake.reset()
         self.apple.reset()
@@ -329,6 +328,11 @@ class HumanGame(GameBase):
         apple: AppleBase,
     ) -> None:
         super().__init__(ncols, nrows, player, wall, snake, apple)
+
+    def reset(self) -> None:
+        """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
+        self.has_started = False
+        super().reset()
 
     def step(self) -> None:
         """Do a game step - player controller sets direction, snake moves, evaluate the state."""  # noqa E501

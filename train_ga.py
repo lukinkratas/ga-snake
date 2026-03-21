@@ -443,10 +443,6 @@ def main() -> None:
         for step in range(max_steps):
             clock.tick(FPS)
 
-            if step == 0:
-                for game in games:
-                    game.has_started = True
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     is_running = False
@@ -459,7 +455,7 @@ def main() -> None:
                 break
 
             for game in games:
-                if game.has_started and not game.is_over and game.steps < max_steps:
+                if not game.is_over and game.steps < max_steps:
                     game.step()
 
             # render games based on orig order, sort only for scoreboard
@@ -469,10 +465,7 @@ def main() -> None:
             renderer.render_scoreboard(sorted_games_desc, gen=gen)
             pygame.display.update()
 
-            if all(
-                game.has_started and (game.is_over or game.steps >= max_steps)
-                for game in games
-            ):
+            if all(game.is_over or game.steps >= max_steps for game in games):
                 break
 
         recorder.stop_rec()
