@@ -355,6 +355,7 @@ class GAGame(Game):
 
     @property
     def steps(self) -> int:
+        """Number of steps."""
         return len(self.coords_stepped)
 
     def reset(self) -> None:

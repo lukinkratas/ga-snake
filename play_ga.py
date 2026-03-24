@@ -11,6 +11,7 @@ from snake.utils import get_random_color, get_squared_wall
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
+rng = np.random.default_rng(seed=42)
 
 DEBUG = True
 
@@ -47,7 +48,7 @@ def init_genomes() -> list[np.ndarray]:
                 [0, 0, 0, 1.0],
             ]
         )
-        + np.random.uniform(-0.1, 0.1, size=(8, 4)),
+        + rng.uniform(-0.1, 0.1, size=(8, 4)),
         -1,
         1,
     )
@@ -70,7 +71,7 @@ def init_games(genomes: list[np.ndarray]) -> list[GAGame]:
     # common wall for all games
     wall = get_squared_wall(NCOLS, NROWS)
 
-    def init_game(genome: np.ndarray, player_name: str | None = NOne) -> GAGame:
+    def init_game(genome: np.ndarray, player_name: str | None = None) -> GAGame:
         color = get_random_color()
         controller = GAController(NCOLS, NROWS, genome)
         player = Player(color, controller, player_name)

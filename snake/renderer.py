@@ -268,7 +268,8 @@ class Renderer:
 
         Args:
             apple: apple
-            active: whether or not is the apple active (affects opacity)
+            color: color to render the apple with
+            alpha: opacity to render the apple with
         """
         rect = self.get_square(apple.coords * self.grid_size)
         render_circle(
@@ -298,6 +299,9 @@ class Renderer:
 
         Args:
             snake: snake
+            color: color to render the snake with
+            alpha: opacity to render the snake with
+            name: name to render on the snake's head
         """
         extra_radius = 10
         common_kwargs = {
@@ -347,10 +351,13 @@ class Renderer:
     def render_games(
         self, games: list[Game], alphas: Sequence[int] | None = None
     ) -> None:
-        """Render games and corresponding walls, snakes and apples in given order on the screen.
+        """Render games and corresponding walls, snakes and apples on the screen.
 
         Args:
             games: list of games
+            alphas:
+                sequence of opacities, corresponding to each game, used for snakes and
+                apples rendering
         """
         if alphas is None:
             alphas = 255 * np.ones(len(games))
@@ -378,7 +385,7 @@ class Renderer:
 
         Args:
             game: game
-            rect: rectangle object
+            row_rect: rectangle object
         """
         text = "Player"
 
@@ -495,7 +502,8 @@ class Renderer:
         """Render matplotlib plot on the screen.
 
         Args:
-            best_fitness_history: list of best fitness per generation
+            best_fitness_history: list of max fitness per generation
+            avg_fitness_history: list of average fitness per generation
         """
         ngens = len(best_fitness_history)
         self.history_ax.clear()
@@ -530,6 +538,14 @@ class Renderer:
         name: str,
         fitness: float,
     ) -> None:
+        """Render genome plot on the screen.
+
+        Args:
+            genome: array to plot
+            color: color of genome's corresponding player
+            name: name of genome's corresponding player
+            fitness: fitness of genome's corresponding player
+        """
         ys = [
             " ".join(fname.capitalize().split("_"))
             for fname in GAController.FEATURE_NAMES

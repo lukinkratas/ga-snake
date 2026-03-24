@@ -52,7 +52,7 @@ def init_games(population: list[np.ndarray]) -> list[GAGame]:
     """Initialize games with it's assets - player, controller, wall, snake and apple.
 
     Args:
-        population - list of genomes(arrays)
+        population: list of genomes(arrays)
 
     Returns: list of games
     """
@@ -76,8 +76,8 @@ def reset_games(games: list[GAGame], population: list[np.ndarray]) -> None:
     """Reset games from list and set new GA controllers from list.
 
     Args:
-        games - list of games
-        population - list of genomes(arrays)
+        games: list of games
+        population: list of genomes(arrays)
     """
     # separate for loop in case lens are not equal
     for game in games:
@@ -111,47 +111,19 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     fitness -= steps_penalty
     info["steps_penalty"] = steps_penalty
 
-    # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
+    # cycling penalty: -1 if all last steps were unique, otherwise linearly increasing
     last_steps = game.coords_stepped[:100]
     cycling_penalty = 1 - np.unique(last_steps, axis=0).shape[0] / len(last_steps)
     fitness -= cycling_penalty
     info["cycling_penalty"] = cycling_penalty
 
-    # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance (diagonal), otherwise linearly decreasing
+    # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance
+    # (diagonal), otherwise linearly decreasing
     apple_dist_penalty = linalg.norm(
         game.apple.coords - game.snake.head_coords, 2
     ) / linalg.norm([NCOLS, NROWS], 2)
     fitness -= apple_dist_penalty
     info["apple_dist_penalty"] = apple_dist_penalty
-
-    # # apple dir penalty: 0 if all applied directions in the current apple hunt are are the same as vector between current and previous apple.
-    # vec_to_apple = VECS_TO_APPLE[game.apple.idx].copy()
-    # # select nonzero items
-    # nz_idxs = np.nonzero(vec_to_apple)
-    # # normalize nonzero items to 1
-    # vec_to_apple[nz_idxs] = vec_to_apple[nz_idxs] / np.abs(vec_to_apple[nz_idxs])
-    #
-    # # apple_dir can be: [1, 0], [0, 1], or even [1, 1]
-    # if np.count_nonzero(vec_to_apple) == 2:
-    #     apple_dir_x, apple_dir_y = vec_to_apple
-    #     apple_dirs = [np.array([apple_dir_x, 0]), np.array([0, apple_dir_y])]
-    # else:
-    #     apple_dirs = [vec_to_apple]
-    #
-    # # [2 or 1 or 0, ...]
-    # dir_matches = np.count_nonzero(
-    #     np.isin(game.dirs_from_last_apple, apple_dirs), axis=1
-    # )
-    # apple_dir_penalty = (
-    #     (
-    #         np.extract(dir_matches != 2, dir_matches).shape[0]
-    #         / len(game.dirs_from_last_apple)
-    #     )
-    #     if len(game.dirs_from_last_apple) > 0
-    #     else 1
-    # )
-    # fitness -= apple_dir_penalty
-    # info["apple_dir_penalty"] = apple_dir_penalty
 
     logger.debug(f"{game.player.name} fitness: {fitness}, {info}")
 
@@ -163,7 +135,7 @@ def mutate(genome: np.ndarray, progress: float) -> np.ndarray:
 
     Args:
         genome: genome (array)
-        gen: current generation number, used for balancing exploration and exploitation
+        progress: float 0-1, indicating how far throught the generations training is
 
     Return: Mutated genome (array)
     """
@@ -210,7 +182,7 @@ def get_next_gen(
         Args:
             genomes_choice: choice list of genomes (arrays)
             size: length of returned list of crossovered genomes
-            gen: current generation number, used for balancing exploration and exploitation
+            progress: float 0-1, indicating how far throught the generations training is
 
         Returns: list of crossovered genomes (arrays)
         """
