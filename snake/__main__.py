@@ -72,8 +72,7 @@ def main() -> None:
     """
     pygame.init()
 
-    scoreboard_row_size = 20
-    score_height = (NPLAYERS + 3) * scoreboard_row_size
+    score_height = 120
     win = pygame.display.set_mode(size=(WIDTH, HEIGHT + score_height))
     pygame.display.set_caption("Snake")
 
@@ -95,7 +94,6 @@ def main() -> None:
         rect_radius=int(GRID_SIZE / 4),
         line_width=2,
         font_size=14,
-        scoreboard_row_size=scoreboard_row_size,
     )
 
     renderer.render_games(games)

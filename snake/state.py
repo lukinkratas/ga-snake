@@ -68,7 +68,7 @@ class DeterministicApple(Apple):
         np.array([1, 10]),
         np.array([15, 18]),
         np.array([28, 10]),
-        # 21 - 24: dist 0, every corver, anti-clockwise
+        # 21 - 24: dist 0, every corner, anti-clockwise
         np.array([28, 1]),
         np.array([1, 1]),
         np.array([1, 18]),
@@ -77,6 +77,24 @@ class DeterministicApple(Apple):
         np.array([15, 10]),
         np.array([14, 10]),
         np.array([16, 10]),
+        # 28 - 33: dist 0, zig zags, left to right
+        np.array([1, 18]),
+        np.array([1, 1]),
+        np.array([15, 18]),
+        np.array([15, 1]),
+        np.array([28, 18]),
+        np.array([28, 1]),
+        # 34 - 39: dist 0, zig zags, bottom up
+        np.array([1, 18]),
+        np.array([28, 18]),
+        np.array([1, 10]),
+        np.array([28, 10]),
+        np.array([1, 1]),
+        np.array([28, 1]),
+        # 40 - 42: mid
+        np.array([15, 10]),
+        np.array([15, 9]),
+        np.array([15, 11]),
     ]
 
     def __init__(self) -> None:

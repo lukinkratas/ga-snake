@@ -17,6 +17,10 @@ uv run --group ga train_ga.py
 - 400 genomes
 - 8x4 matrix controlled
 - 8 features: danger (rel. distance to wall or body) in each direction, rel. distance to apple in each direction
+- things one can tweak:
+  - genome features, controller matrix
+  - selection distribution, mutation and crossover settings
+  - fitness function - rewards and penalties
 - problem of GA in general:
 
   1. **Large number of possible combinations:**

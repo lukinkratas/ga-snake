@@ -139,7 +139,6 @@ class Renderer:
         rect_radius: int,
         line_width: int,
         font_size: int,
-        scoreboard_row_size: int,
         font_family: str = "Arial",
         history_plot_surf: pygame.Surface | None = None,
         genome_plot_surf: pygame.Surface | None = None,
@@ -154,9 +153,10 @@ class Renderer:
         self.font_size = font_size
         self.font = pygame.font.SysFont(font_family, font_size)
         self.font_bold = pygame.font.SysFont(font_family, font_size, bold=True)
-        self.scoreboard_row_size = scoreboard_row_size
         self.history_plot_surf = history_plot_surf
         self.genome_plot_surf = genome_plot_surf
+        self.scoreboard_row_height = int(1.4 * self.font_size)
+        self.scoreboard_row_width = 200
 
         if self.history_plot_surf or self.genome_plot_surf:
             px = 1 / plt.rcParams["figure.dpi"]  # pixel in inches
@@ -401,7 +401,11 @@ class Renderer:
             rect=row_rect,
         )
 
-    def render_scoreboard(self, games: list[Game], gen: str | None = None) -> None:
+    def render_scoreboard(
+        self,
+        games: list[Game],
+        gen: str | None = None,
+    ) -> None:
         """Render scoreboard including title and score per player on the screen.
 
         Args:
@@ -416,7 +420,7 @@ class Renderer:
             text = "Press P to pause, Q to quit."
 
         row_rect = pygame.Rect(
-            0, 0, self.score_surf.get_width(), self.scoreboard_row_size
+            0, 0, self.score_surf.get_width(), self.scoreboard_row_height
         )
         render_text_on_rect(self.score_surf, text, self.font, font_color, row_rect)
 
@@ -427,39 +431,43 @@ class Renderer:
 
         row_rect = pygame.Rect(
             0,
-            self.scoreboard_row_size,
+            self.scoreboard_row_height,
             self.score_surf.get_width(),
-            self.scoreboard_row_size,
+            self.scoreboard_row_height,
         )
         render_text_on_rect(self.score_surf, text, self.font_bold, font_color, row_rect)
 
-        print_more = len(games) > 200
-        available_games = games[:199] if len(games) > 200 else games
-        available_height = self.score_surf.get_height()
         # count rows for player scores, 3 reserved for intructions, title and footer
-        available_nrows = int(available_height / self.scoreboard_row_size) - 3
-        # round up number of cols
-        ncols = math.ceil(len(available_games) / available_nrows)
+        nrows = int(self.score_surf.get_height() / self.scoreboard_row_height) - 3
+        # ncols is either
+        ncols = min(
+            int(self.score_surf.get_width() / self.scoreboard_row_width),
+            math.ceil(len(games) / nrows),
+        )
 
-        y_offset = 2 * self.scoreboard_row_size
+        max_ngames = nrows * ncols
+        print_more = len(games) > max_ngames
+        available_games = games[: max_ngames - 1] if print_more else games
+
+        y_offset = 2 * self.scoreboard_row_height
         for col_idx in range(ncols):
-            from_idx = col_idx * available_nrows
-            to_idx = (col_idx + 1) * available_nrows
+            from_idx = col_idx * nrows
+            to_idx = (col_idx + 1) * nrows
             for row_idx, game in enumerate(available_games[from_idx:to_idx]):
                 row_rect = pygame.Rect(
                     col_idx * self.score_surf.get_width() / ncols,
-                    y_offset + row_idx * self.scoreboard_row_size,
+                    y_offset + row_idx * self.scoreboard_row_height,
                     self.score_surf.get_width() / ncols,
-                    self.scoreboard_row_size,
+                    self.scoreboard_row_height,
                 )
                 self.render_player_row(game, row_rect)
 
         if print_more:
             row_rect = pygame.Rect(
                 (ncols - 1) * self.score_surf.get_width() / ncols,
-                y_offset + (available_nrows - 1) * self.scoreboard_row_size,
+                y_offset + (nrows - 1) * self.scoreboard_row_height,
                 self.score_surf.get_width() / ncols,
-                self.scoreboard_row_size,
+                self.scoreboard_row_height,
             )
             render_text_on_rect(
                 surf=self.score_surf,
@@ -477,7 +485,7 @@ class Renderer:
             int(self.grid_size * self.ncols * 0.1),
             int(self.grid_size * self.nrows * 0.1),
             100,
-            self.scoreboard_row_size,
+            self.scoreboard_row_height,
         )
         render_text_on_rect(self.game_surf, text, self.font_bold, font_color, rect)
 
@@ -518,8 +526,9 @@ class Renderer:
     def render_genome_plot(
         self,
         genome: np.ndarray,
-        color: Sequence[float] | None = None,
-        name: str | None = None,
+        color: Sequence[float],
+        name: str,
+        fitness: float,
     ) -> None:
         ys = [
             " ".join(fname.capitalize().split("_"))
@@ -538,9 +547,7 @@ class Renderer:
             ax.set_xlim(min(*xs, -1), max(*xs, 1))
             ax.grid(True)
 
-        title = "Last Best Genome"
-        if name:
-            title += f" {name}"
+        title = f"Last Best Genome {name} (fitness: {fitness:.2f})"
         self.genome_fig.suptitle(title, color=color, fontweight="bold")
         self.genome_fig.tight_layout(rect=[0.20, 0.05, 0.95, 0.95])
 

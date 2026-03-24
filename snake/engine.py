@@ -354,7 +354,7 @@ class GAGame(Game):
         super().__init__(ncols, nrows, player, wall, snake, apple)
 
     @property
-    def steps(self):
+    def steps(self) -> int:
         return len(self.coords_stepped)
 
     def reset(self) -> None:

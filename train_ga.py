@@ -25,15 +25,16 @@ HEIGHT = NROWS * GRID_SIZE
 
 FPS = 60
 NGENOMES = 400
-NGENS = 500
-NSTEPS = 300
+NGENS = 1000
+NSTEPS = 400
 
 BEST_GENOMES_DIR = Path("best_genomes")
 
 SHAPE = (len(GAController.FEATURE_NAMES), len(DIRECTIONS))
-# VECS_TO_APPLE = np.array(DeterministicApple._COORDS) - np.array(
-#     [Snake.INIT_HEAD_COORDS, *DeterministicApple._COORDS[:-1]]
-# )
+VECS_TO_APPLE = np.diff(
+    np.concatenate(([Snake.INIT_HEAD_COORDS], DeterministicApple._COORDS)), axis=0
+)
+STEPS_TO_APPLE = np.sum(np.abs(VECS_TO_APPLE), axis=1)
 
 
 def init_population(size: int) -> list[np.ndarray]:
@@ -97,16 +98,22 @@ def eval_fitness(game: GAGame, max_steps: int) -> float:
     """
     score_factor = game.player.score
     game_over_penalty = int(game.is_over)
-    fitness = 10 * score_factor - 5 * game_over_penalty
+    fitness = 10 * score_factor - game_over_penalty
     info = {"score_factor": score_factor, "game_over_penalty": game_over_penalty}
 
-    # # coords stepped penalty: 0 if lasted till max steps, otherwise linearly increasing
+    # # steps penalty: 0 if lasted till max steps, otherwise linearly increasing
     # steps_penalty = 1 - game.steps / max_steps
     # fitness -= steps_penalty
     # info["steps_penalty"] = steps_penalty
 
-    # cycling penalty: 0 if all steps were unique, otherwise linearly increasing
-    cycling_penalty = 1 - np.unique(game.coords_stepped, axis=0).shape[0] / game.steps
+    # # steps penalty: 0 if the most efficient path, otherwise linearly increasing
+    steps_penalty = game.steps / np.sum(STEPS_TO_APPLE[: game.apple.idx + 1]) - 1
+    fitness -= steps_penalty
+    info["steps_penalty"] = steps_penalty
+
+    # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
+    last_steps = game.coords_stepped[:100]
+    cycling_penalty = 1 - np.unique(last_steps, axis=0).shape[0] / len(last_steps)
     fitness -= cycling_penalty
     info["cycling_penalty"] = cycling_penalty
 
@@ -162,16 +169,13 @@ def mutate(genome: np.ndarray, progress: float) -> np.ndarray:
     """
     logger.debug("Mutating genome.")
 
-    # mutation_rate = 0.2
-    mutation_rate = 0.1 + 0.1 * (1 - progress)
-    # mask = rng.uniform(0, 1, genome.shape) < mutation_rate
+    # mutation_rate = 0.5
+    mutation_rate = 0.1 + 0.3 * (1 - progress)
     mask = rng.random(genome.shape) < mutation_rate
-    # mask = rng.choice([True, False], size=SHAPE, p=[1 - progress, progress])
 
-    # mutation_scale = 0.4
-    mutation_scale = 0.2 + 0.2 * (1 - progress)
+    # mutation_scale = 1.0
+    mutation_scale = 0.2 + 0.6 * (1 - progress)
     noise = rng.uniform(-1, 1, genome.shape) * mutation_scale
-    # noise = rng.choice([-1, 1], size=genome.shape) * mutation_scale
 
     new_arr = genome.copy()
     new_arr[mask] += noise[mask]
@@ -244,19 +248,19 @@ def get_next_gen(
     next_gen = elites.copy()
 
     mutated_genomes = get_mutated_genomes(
-        elites, size=int(0.10 * ngenomes), progress=progress
+        elites, size=int(0.15 * ngenomes), progress=progress
     )
     next_gen.extend(mutated_genomes)
 
     mutated_genomes = get_mutated_genomes(
-        top_half, size=int(0.35 * ngenomes), progress=progress
+        top_half, size=int(0.30 * ngenomes), progress=progress
     )
     next_gen.extend(mutated_genomes)
 
-    crossover_genomes = get_crossover_genomes(elites, elites, size=int(0.10 * ngenomes))
+    crossover_genomes = get_crossover_genomes(elites, elites, size=int(0.15 * ngenomes))
     next_gen.extend(crossover_genomes)
 
-    crossover_genomes = get_crossover_genomes(elites, rest, size=int(0.35 * ngenomes))
+    crossover_genomes = get_crossover_genomes(elites, rest, size=int(0.30 * ngenomes))
     next_gen.extend(crossover_genomes)
 
     # inject random immigrants
@@ -283,7 +287,6 @@ def main() -> None:
     """
     pygame.init()
 
-    scoreboard_row_size = 14
     score_width = 800
     history_plot_height = 155
     genome_plot_height = 155
@@ -330,7 +333,6 @@ def main() -> None:
         rect_radius=int(GRID_SIZE / 4),
         line_width=1,
         font_size=10,
-        scoreboard_row_size=scoreboard_row_size,
         history_plot_surf=history_plot_surf,
         genome_plot_surf=genome_plot_surf,
     )
@@ -390,6 +392,7 @@ def main() -> None:
         order_desc = np.argsort(fitness)[::-1]
 
         # sort in place
+        fitness = [fitness[idx] for idx in order_desc]
         games = [games[idx] for idx in order_desc]
         population = [population[idx] for idx in order_desc]
 
@@ -410,6 +413,7 @@ def main() -> None:
             best_genome,
             color=np.array(best_game.player.color) / 255,
             name=best_game.player.name,
+            fitness=fitness[0],
         )
         pygame.display.update()
 
