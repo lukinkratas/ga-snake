@@ -1,12 +1,15 @@
 import logging
 from abc import ABC, abstractmethod
-from itertools import product
 
 import numpy as np
 import pygame
 
 from .const import DIRECTIONS, DOWN, LEFT, RIGHT, UP
-from .state import Apple, DeterministicApple, RandomApple, Snake, Wall
+from .state import (
+    Apple,
+    Snake,
+    Wall,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -108,94 +111,51 @@ class GAController:
 
         head_x, head_y = snake.head_coords
 
-        # Distances to walls
-        wall_right_rects_xs = np.array(
-            [c[0] for c in wall.coords if c[1] == head_y and c[0] > head_x]
-        )
+        danger_coords = np.asarray(wall.coords + snake.body_coords)
+
+        mask = (danger_coords[:, 1] == head_y) & (danger_coords[:, 0] > head_x)
+        danger_right_rects_xs = danger_coords[mask, 0]
+
         # danger: 1 if wall is next to head, linearly decreasing
-        if wall_right_rects_xs.size != 0:
-            # No bodies rects found on the right
-            wall_danger_right = (
-                1 - np.min(wall_right_rects_xs - head_x - 1) / available_ncols
-            )
-        else:
-            wall_danger_right = np.float64(0)
-
-        # Distances to snake body
-        body_right_rects_xs = np.array(
-            [c[0] for c in snake.body_coords if c[1] == head_y and c[0] > head_x]
+        # No bodies rects found on the right
+        danger_right = (
+            (1 - np.min(danger_right_rects_xs - head_x - 1) / available_ncols)
+            if danger_right_rects_xs.size != 0
+            else np.float64(0)
         )
-        if body_right_rects_xs.size != 0:
-            body_danger_right = (
-                1 - np.min(body_right_rects_xs - head_x - 1) / available_ncols
-            )
-        else:
-            body_danger_right = np.float64(0)
 
-        wall_left_rects_xs = np.array(
-            [c[0] for c in wall.coords if c[1] == head_y and c[0] < head_x]
+        mask = (danger_coords[:, 1] == head_y) & (danger_coords[:, 0] < head_x)
+        danger_left_rects_xs = danger_coords[mask, 0]
+
+        # danger: 1 if wall is next to head, linearly decreasing
+        # No bodies rects found on the right
+        danger_left = (
+            (1 - np.min(head_x - 1 - danger_left_rects_xs) / available_ncols)
+            if danger_left_rects_xs.size != 0
+            else np.float64(0)
         )
-        if wall_left_rects_xs.size != 0:
-            wall_danger_left = (
-                1 - np.min(head_x - 1 - wall_left_rects_xs) / available_ncols
-            )
-        else:
-            wall_danger_left = np.float64(0)
 
-        body_left_rects_xs = np.array(
-            [c[0] for c in snake.body_coords if c[1] == head_y and c[0] < head_x]
+        mask = (danger_coords[:, 0] == head_x) & (danger_coords[:, 1] < head_y)
+        danger_upper_rects_ys = danger_coords[mask, 1]
+
+        # danger: 1 if wall is next to head, linearly decreasing
+        # No bodies rects found on the right
+        danger_up = (
+            (1 - np.min(head_y - 1 - danger_upper_rects_ys) / available_nrows)
+            if danger_upper_rects_ys.size != 0
+            else np.float64(0)
         )
-        if body_left_rects_xs.size != 0:
-            body_danger_left = (
-                1 - np.min(head_x - 1 - body_left_rects_xs) / available_ncols
-            )
-        else:
-            body_danger_left = np.float64(0)
 
-        wall_upper_rects_ys = np.array(
-            [c[1] for c in wall.coords if c[0] == head_x and c[1] < head_y]
+        mask = (danger_coords[:, 0] == head_x) & (danger_coords[:, 1] > head_y)
+        danger_bottom_rects_ys = danger_coords[mask, 1]
+
+        # danger: 1 if wall is next to head, linearly decreasing
+        # No bodies rects found on the right
+        danger_down = (
+            (1 - np.min(danger_bottom_rects_ys - head_y - 1) / available_nrows)
+            if danger_bottom_rects_ys.size != 0
+            else np.float64(0)
         )
-        if wall_upper_rects_ys.size != 0:
-            wall_danger_up = (
-                1 - np.min(head_y - 1 - wall_upper_rects_ys) / available_nrows
-            )
-        else:
-            wall_danger_up = np.float64(0)
-
-        body_upper_rects_ys = np.array(
-            [c[1] for c in snake.body_coords if c[0] == head_x and c[1] < head_y]
-        )
-        if body_upper_rects_ys.size != 0:
-            body_danger_up = (
-                1 - np.min(head_y - 1 - body_upper_rects_ys) / available_nrows
-            )
-        else:
-            body_danger_up = np.float64(0)
-
-        wall_bottom_rects_ys = np.array(
-            [c[1] for c in wall.coords if c[0] == head_x and c[1] > head_y]
-        )
-        if wall_bottom_rects_ys.size != 0:
-            wall_danger_down = (
-                1 - np.min(wall_bottom_rects_ys - head_y - 1) / available_nrows
-            )
-        else:
-            wall_danger_down = np.float64(0)
-
-        body_bottom_rects_ys = np.array(
-            [c[1] for c in snake.body_coords if c[0] == head_x and c[1] > head_y]
-        )
-        if body_bottom_rects_ys.size != 0:
-            body_danger_down = (
-                1 - np.min(body_bottom_rects_ys - head_y - 1) / available_nrows
-            )
-        else:
-            body_danger_down = np.float64(0)
-
-        danger_right = np.max([wall_danger_right, body_danger_right])
-        danger_left = np.max([wall_danger_left, body_danger_left])
-        danger_up = np.max([wall_danger_up, body_danger_up])
-        danger_down = np.max([wall_danger_down, body_danger_down])
 
         # Distances to apple
         apple_dx, apple_dy = (apple.coords - snake.head_coords) / np.array(
@@ -231,7 +191,10 @@ class Player:
     _IDX = 0
 
     def __init__(
-        self, color: tuple[int, int, int], controller, name: str | None = None
+        self,
+        color: tuple[int, int, int],
+        controller: HumanController | GAController,
+        name: str | None = None,
     ) -> None:
         self.color = color
         self.controller = controller
@@ -273,21 +236,7 @@ class Game(ABC):
         self.snake.reset()
         self.apple.reset()
 
-    def _get_coords_for_random_apple(self) -> list[np.ndarray]:
-        """Helper method used for setting free coordinates for apple placement."""
-        xs = np.arange(int(self.ncols))
-        ys = np.arange(int(self.nrows))
-        exclude_coords = self.wall.coords + self.snake.coords
-
-        coords = []
-        for c in product(xs, ys):
-            arr = np.array(c)
-            if not np.all(exclude_coords == arr, axis=1).any():
-                coords.append(arr)
-
-        return coords
-
-    def eval_state(self) -> None:
+    def eval_state(self) -> bool:
         """Evaluate a game state - check wall and self collisions of snake, check if snake ate an apple."""  # noqa E501
         # wall collision
         if np.all(self.wall.coords == self.snake.head_coords, axis=1).any():
@@ -302,14 +251,10 @@ class Game(ABC):
         if np.all(self.snake.head_coords == self.apple.coords):
             self.player.score += 1
             self.snake.extend()
-            self.dirs_to_apple = []
-            if isinstance(self.apple, RandomApple):
-                self.apple.move(coords_choice=self._get_coords_for_random_apple())
-            elif isinstance(self.apple, DeterministicApple):
-                self.apple.move()
-            else:
-                raise Exception
             logger.debug("Apple eaten.")
+            return True
+
+        return False
 
     @abstractmethod
     def step(self) -> None:
@@ -338,7 +283,7 @@ class HumanGame(Game):
         """Do a game step - player controller sets direction, snake moves, evaluate the state."""  # noqa E501
         direction = self.player.controller.set_dir()
         self.snake.move(direction)
-        self.eval_state()
+        return self.eval_state()
 
 
 class GAGame(Game):
@@ -361,7 +306,6 @@ class GAGame(Game):
     def reset(self) -> None:
         """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
         self.coords_stepped = []
-        # self.dirs_from_last_apple = [self.snake.head_dir]
         super().reset()
 
     def step(self) -> None:
@@ -369,6 +313,5 @@ class GAGame(Game):
         features = self.player.controller.eval_state(self.snake, self.apple, self.wall)
         direction = self.player.controller.set_dir(features)
         self.snake.move(direction)
-        self.eval_state()
         self.coords_stepped.append(self.snake.head_coords.copy())
-        # self.dirs_from_last_apple.append(self.snake.head_dir)
+        return self.eval_state()

@@ -1,5 +1,13 @@
+- [ ] bug: apple pos generating: what if no free space, cause all spaces taken by walls and snakes?
 - [ ] lint
 - [ ] test binary apple feature ?
+- [ ] test hidden layer 8-12-4 ?
+- [x] remove random and pseudorandom apple class
+- [x] evaluating fitness as avg per 5 gens
+- [x] GAGame has_started to be used in play_ga
+- [x] selective selection - either choice of values [1, -1, 0, 0.5, 0.25 etc.] or position in the array choice
+- [x] pseudo random apple - choice of positions
+- [x] more efficient GAController features via np
 - [x] update play ang main with init game from train
 - [x] mutation, crossover - using random, choice, not np
 - [x] adjust mut scale and mut rate to non binary

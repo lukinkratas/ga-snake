@@ -21,6 +21,7 @@ uv run --group ga train_ga.py
   - genome features, controller matrix
   - selection distribution, mutation and crossover settings
   - fitness function - rewards and penalties
+  - apple positions - order of features learned
 - problem of GA in general:
 
   1. **Large number of possible combinations:**
@@ -34,5 +35,9 @@ uv run --group ga train_ga.py
     Because deterministic apple (predefined positions for training) is being used, genome is learning single feature at a time. (When random apple was used, selection tended to prefer genomes, that had the apple right in front of them randomly by accident, not by learning any feature.)
 
     Adjusted features are selected randomly. There is no mechanism of keeping good features, that might be very useful later.
+
+  3. **Learned features persistance:**
+
+    In case of random or pseudorandom apple, when feature is finally leaned, e.g.: turning down, if it sucks on other features, it can still get eliminated from the selection next gen.
 
 https://github.com/user-attachments/assets/9097a2af-d041-4078-a492-54cf8ffe0297

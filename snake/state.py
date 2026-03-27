@@ -1,6 +1,4 @@
 import logging
-import random
-from abc import ABC, abstractmethod
 from collections import deque
 
 import numpy as np
@@ -8,110 +6,36 @@ import numpy as np
 from .const import LEFT, RIGHT
 
 logger = logging.getLogger(__name__)
+rng = np.random.default_rng(seed=42)
 
 
-class Apple(ABC):
-    def __init__(self) -> None:
-        self.reset()
-
-    @abstractmethod
-    def reset(self) -> None:
-        """Reset the apple to default position."""
-        self.idx = 0
-
-    @abstractmethod
-    def move(self) -> None:
-        """Move apple to new position."""
-        self.idx += 1
-
-
-class RandomApple(Apple):
+class Apple:
     INIT_COORDS = np.array([20, 10])
 
     def __init__(self) -> None:
-        super().__init__()
+        self.reset()
 
     def reset(self) -> None:
         """Reset the apple to default position."""
+        self.idx = 0
         self.coords = self.INIT_COORDS.copy()
-        super().reset()
+        self.coords_list = [self.coords]
 
-    def move(self, coords_choice: list[np.ndarray]) -> None:
+    def move(self, coords: np.ndarray) -> None:
         """Move apple to new position."""
-        self.coords = random.choice(coords_choice)
-        super().move()
+        self.coords = coords
+        self.coords_list.append(self.coords)
+        self.idx += 1
 
-
-class DeterministicApple(Apple):
-    _COORDS = [
-        np.array([20, 10]),
-        # 2 - 8: dist 4, clockwise
-        np.array([20, 15]),
-        np.array([15, 15]),
-        np.array([10, 15]),
-        np.array([10, 10]),
-        np.array([10, 5]),
-        np.array([15, 5]),
-        np.array([20, 5]),
-        # 9 - 12: dist 1, mid of wall, clockwise
-        np.array([27, 10]),
-        np.array([15, 17]),
-        np.array([2, 10]),
-        np.array([15, 2]),
-        # 13 - 16: dist 1, every corner, clockwise
-        np.array([27, 2]),
-        np.array([27, 17]),
-        np.array([2, 17]),
-        np.array([2, 2]),
-        # 17 - 20: dist 0, mid of wall, anti-clockwise
-        np.array([15, 1]),
-        np.array([1, 10]),
-        np.array([15, 18]),
-        np.array([28, 10]),
-        # 21 - 24: dist 0, every corner, anti-clockwise
-        np.array([28, 1]),
-        np.array([1, 1]),
-        np.array([1, 18]),
-        np.array([28, 18]),
-        # 25-27: mid
-        np.array([15, 10]),
-        np.array([14, 10]),
-        np.array([16, 10]),
-        # 28 - 33: dist 0, zig zags, left to right
-        np.array([1, 18]),
-        np.array([1, 1]),
-        np.array([15, 18]),
-        np.array([15, 1]),
-        np.array([28, 18]),
-        np.array([28, 1]),
-        # 34 - 39: dist 0, zig zags, bottom up
-        np.array([1, 18]),
-        np.array([28, 18]),
-        np.array([1, 10]),
-        np.array([28, 10]),
-        np.array([1, 1]),
-        np.array([28, 1]),
-        # 40 - 42: mid
-        np.array([15, 10]),
-        np.array([15, 9]),
-        np.array([15, 11]),
-    ]
-
-    def __init__(self) -> None:
-        super().__init__()
-
-    def reset(self) -> None:
-        """Reset the apple to default position."""
-        super().reset()
-
-    def move(self) -> None:
-        """Move apple to new position."""
-        super().move()
-
-    @property
-    def coords(self) -> np.ndarray:
-        """Coordinates of an apple."""
-        return self._COORDS[self.idx]
+    # @property
+    # def vecs(self) -> np.ndarray:
+    #     return np.diff(
+    #         np.concatenate(([Snake.INIT_HEAD_COORDS], self.coords_list)), axis=0
+    #     )
+    #
+    # @property
+    # def min_nsteps_needed(self) -> np.ndarray:
+    #     return np.sum(np.abs(self.vecs), axis=1)
 
 
 class Snake:
@@ -138,7 +62,7 @@ class Snake:
         return self.coords[0]
 
     @property
-    def body_coords(self) -> np.ndarray:
+    def body_coords(self) -> list[np.ndarray]:
         """Coordinates of snake's body. Used for collision detection and rendering."""
         return self.coords[1:]
 
@@ -164,8 +88,8 @@ class Snake:
         self.dirs_q.appendleft(self.head_dir)
         self.dirs_q.pop()
 
-        for c, direction in zip(self.coords, self.dirs_q):
-            c += direction
+        for c, d in zip(self.coords, self.dirs_q):
+            c += d
 
     def extend(self) -> None:
         """Extend the snake."""
@@ -175,5 +99,5 @@ class Snake:
 
 class Wall:
     def __init__(self, coords: list[np.ndarray]) -> None:
-        self.color = tuple(50 * np.ones(3))
+        self.color = tuple(50 * np.ones(3, dtype=int))
         self.coords = coords

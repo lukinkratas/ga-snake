@@ -1,11 +1,17 @@
 import logging
 
+import numpy as np
 import pygame
 
 from snake.engine import HumanController, HumanGame, Player
 from snake.renderer import Renderer
-from snake.state import RandomApple, Snake
-from snake.utils import get_random_color, get_squared_wall
+from snake.state import Apple, Snake
+from snake.utils import (
+    get_exclude_coords,
+    get_free_coords,
+    get_random_color,
+    get_squared_wall,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -34,7 +40,7 @@ def init_games(nplayers: int) -> list[HumanGame]:
         controller = HumanController()
         player = Player(color, controller, player_name)
         snake = Snake()
-        apple = RandomApple()
+        apple = Apple()
         return HumanGame(NCOLS, NROWS, player, wall, snake, apple)
 
     return [init_game(str(idx + 1)) for idx in range(nplayers)]
@@ -103,6 +109,7 @@ def main() -> None:
     # game loop
     is_running = True
     is_paused = False
+    apple_coords_generated = []
     while is_running:
         clock.tick(FPS)
 
@@ -124,10 +131,19 @@ def main() -> None:
 
         if not is_paused:
             for game in games:
-                if game.has_started is False or game.is_over:
-                    continue
+                if game.has_started is True and not game.is_over:
+                    apple_eaten = game.step()
 
-                game.step()
+                    if apple_eaten:
+                        coords = apple_coords_generated[game.apple.idx]
+                        game.apple.move(coords)
+
+                    if game.apple.idx >= len(apple_coords_generated):
+                        xrange = np.arange(NCOLS)
+                        yrange = np.arange(NROWS)
+                        exclude = get_exclude_coords(games)
+                        new_apple_coords = get_free_coords(xrange, yrange, exclude)
+                        apple_coords_generated.append(new_apple_coords)
 
             sorted_games_desc = sorted(
                 games,

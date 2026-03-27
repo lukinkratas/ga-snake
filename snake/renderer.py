@@ -156,7 +156,7 @@ class Renderer:
         self.history_plot_surf = history_plot_surf
         self.genome_plot_surf = genome_plot_surf
         self.scoreboard_row_height = int(1.4 * self.font_size)
-        self.scoreboard_row_width = 200
+        self.scoreboard_row_width = 160
 
         if self.history_plot_surf or self.genome_plot_surf:
             px = 1 / plt.rcParams["figure.dpi"]  # pixel in inches
@@ -169,7 +169,6 @@ class Renderer:
             self.history_fig, self.history_ax = plt.subplots(
                 figsize=(width_px * px, height_px * px)
             )
-            self.history_fig.set_tight_layout(True)
 
         if self.genome_plot_surf:
             width_px = self.history_plot_surf.get_width()
@@ -177,9 +176,8 @@ class Renderer:
             self.genome_fig, self.genome_ax = plt.subplots(
                 nrows=1, ncols=4, sharey=True, figsize=(width_px * px, height_px * px)
             )
-            self.genome_fig.set_tight_layout(True)
 
-    def get_square(self, coords: np.ndarray) -> pygame.rect:
+    def get_square(self, coords: np.ndarray) -> pygame.Rect:
         """Draw square of grid_size.
 
         Args:
@@ -280,13 +278,6 @@ class Renderer:
             line_width=self.line_width,
             radius=int(0.8 * self.grid_size / 2),
         )
-        render_text_on_rect(
-            surf=self.game_surf,
-            text=str(apple.idx + 1),
-            font=self.font,
-            font_color=(50, 50, 50, alpha),
-            rect=rect,
-        )
 
     def render_snake(
         self,
@@ -367,18 +358,15 @@ class Renderer:
         self.render_grid()
 
         # render only unique wall object, if wall is shared
-        for wall in {game.wall for game in games}:
+        uniq_walls = {game.wall for game in games}
+        for wall in uniq_walls:
             self.render_wall(wall)
 
         # separate for loop, bcs I want the snakes to be visible on top of wall
         for game, alpha in zip(games, alphas):
             alpha = alpha if game.snake.is_alive else 31
-            self.render_snake(game.snake, game.player.color, alpha)
-
-        # separate for loop, bcs I want the apples to be visible on snakes
-        for game, alpha in zip(games, alphas):
-            alpha = alpha if game.snake.is_alive else 31
             self.render_apple(game.apple, game.player.color, alpha)
+            self.render_snake(game.snake, game.player.color, alpha)
 
     def render_player_row(self, game: Game, row_rect: pygame.Rect) -> None:
         """Render row per game/player in the scoreboard.
@@ -516,7 +504,7 @@ class Renderer:
         self.history_ax.set_title("Fitness per Generation", fontweight="bold")
         self.history_ax.set_xlabel("Generation", fontsize=self.font_size)
         self.history_ax.set_ylabel("Fitness", fontsize=self.font_size)
-        self.history_ax.legend(loc="upper left", fontsize=self.font_size)
+        self.history_ax.legend(loc="upper left", fontsize=self.font_size, frameon=False)
 
         # needed to invoke dtype on axis
         nx = np.linspace(0, ngens + 1, num=min(ngens + 2, 12), dtype=np.int16)

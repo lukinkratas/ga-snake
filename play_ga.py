@@ -6,8 +6,13 @@ import pygame
 
 from snake.engine import GAController, GAGame, Player
 from snake.renderer import Renderer
-from snake.state import RandomApple, Snake
-from snake.utils import get_random_color, get_squared_wall
+from snake.state import Apple, Snake
+from snake.utils import (
+    get_exclude_coords,
+    get_free_coords,
+    get_random_color,
+    get_squared_wall,
+)
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
@@ -76,22 +81,12 @@ def init_games(genomes: list[np.ndarray]) -> list[GAGame]:
         controller = GAController(NCOLS, NROWS, genome)
         player = Player(color, controller, player_name)
         snake = Snake()
-        apple = RandomApple()
+        apple = Apple()
         return GAGame(NCOLS, NROWS, player, wall, snake, apple)
 
     return [
         init_game(genome, f"G{gidx}") for gidx, genome in enumerate(genomes, start=1)
     ]
-
-
-def start_games(games: list[GAGame]) -> None:
-    """Start games from list.
-
-    Args:
-        games: list of games
-    """
-    for game in games:
-        game.has_started = True
 
 
 def reset_games(games: list[GAGame]) -> None:
@@ -136,8 +131,7 @@ def main() -> None:
         GRID_SIZE,
         rect_radius=int(GRID_SIZE / 4),
         line_width=2,
-        font_size=14,
-        scoreboard_row_size=scoreboard_row_size,
+        font_size=13,
     )
 
     renderer.render_games(games)
@@ -149,10 +143,12 @@ def main() -> None:
     # game loop
     is_running = True
     is_paused = False
+    apple_coords_generated = []
     while is_running:
         clock.tick(FPS)
 
-        start_games(games)
+        for game in games:
+            game.has_started = True
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -170,10 +166,19 @@ def main() -> None:
 
         if not is_paused:
             for game in games:
-                if game.has_started is False or game.is_over:
-                    continue
+                if game.has_started is True and not game.is_over:
+                    apple_eaten = game.step()
 
-                game.step()
+                    if apple_eaten:
+                        coords = apple_coords_generated[game.apple.idx]
+                        game.apple.move(coords)
+
+                    if game.apple.idx >= len(apple_coords_generated):
+                        xrange = np.arange(NCOLS)
+                        yrange = np.arange(NROWS)
+                        exclude = get_exclude_coords(games)
+                        new_apple_coords = get_free_coords(xrange, yrange, exclude)
+                        apple_coords_generated.append(new_apple_coords)
 
             sorted_games_desc = sorted(
                 games,
