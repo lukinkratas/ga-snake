@@ -19,23 +19,23 @@ class Apple:
         """Reset the apple to default position."""
         self.idx = 0
         self.coords = self.INIT_COORDS.copy()
-        self.coords_list = [self.coords]
+        self.coords_history = [self.INIT_COORDS.copy()]
 
     def move(self, coords: np.ndarray) -> None:
         """Move apple to new position."""
         self.coords = coords
-        self.coords_list.append(self.coords)
+        self.coords_history.append(self.coords)
         self.idx += 1
 
-    # @property
-    # def vecs(self) -> np.ndarray:
-    #     return np.diff(
-    #         np.concatenate(([Snake.INIT_HEAD_COORDS], self.coords_list)), axis=0
-    #     )
-    #
-    # @property
-    # def min_nsteps_needed(self) -> np.ndarray:
-    #     return np.sum(np.abs(self.vecs), axis=1)
+    @property
+    def _vecs(self) -> np.ndarray:
+        return np.diff(
+            np.concatenate(([Snake.INIT_HEAD_COORDS], self.coords_history)), axis=0
+        )
+
+    @property
+    def _min_steps_needed(self) -> np.ndarray:
+        return np.sum(np.abs(self._vecs), axis=1)
 
 
 class Snake:
@@ -55,6 +55,7 @@ class Snake:
         self.head_dir = RIGHT
         self.dirs_q = deque([self.head_dir, RIGHT, RIGHT])
         self.is_alive = True
+        self.coords_history = [self.INIT_HEAD_COORDS.copy()]
 
     @property
     def head_coords(self) -> np.ndarray:
@@ -76,6 +77,10 @@ class Snake:
         """Direction of snake's tail. Used for extending."""
         return self.dirs_q[-1]
 
+    @property
+    def steps(self) -> int:
+        return len(self.coords_history)
+
     def move(self, direction: np.ndarray | None) -> None:
         """Move the snake in direction.
 
@@ -90,6 +95,8 @@ class Snake:
 
         for c, d in zip(self.coords, self.dirs_q):
             c += d
+
+        self.coords_history.append(self.head_coords.copy())
 
     def extend(self) -> None:
         """Extend the snake."""

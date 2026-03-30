@@ -1,4 +1,3 @@
-- [ ] bug: apple pos generating: what if no free space, cause all spaces taken by walls and snakes?
 - [ ] lint
 - [ ] test binary apple feature ?
 - [ ] test hidden layer 8-12-4 ?

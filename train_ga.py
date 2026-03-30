@@ -1,5 +1,7 @@
 import datetime
 import logging
+
+# from itertools import product
 from pathlib import Path
 
 import numpy as np
@@ -31,11 +33,54 @@ HEIGHT = NROWS * GRID_SIZE
 FPS = 60
 NGENOMES = 600
 NGENS = 1000
-NSTEPS = 400
+NSTEPS = 600
 
 BEST_GENOMES_DIR = Path("best_genomes")
 
 SHAPE = (len(GAController.FEATURE_NAMES), len(DIRECTIONS))
+# ALL_GENOMES = product([0.0, 1.0, -1.0], repeat=32)
+# COORDS = [
+#     # 1-4: mid of wall, clockwise
+#     np.array([15, 18]),
+#     np.array([1, 10]),
+#     np.array([15, 1]),
+#     np.array([28, 10]),
+#     # 5: mid
+#     np.array([15, 10]),
+#     # 6-9: every corner, anti-clockwise
+#     np.array([28, 1]),
+#     np.array([1, 1]),
+#     np.array([1, 18]),
+#     np.array([28, 18]),
+#     # 10-12: top right triangle, clockwise
+#     np.array([1, 1]),
+#     np.array([28, 1]),
+#     np.array([28, 18]),
+#     # 13-15: bottom left triangle, anti-clockwise
+#     np.array([1, 1]),
+#     np.array([1, 18]),
+#     np.array([28, 18]),
+#     # 16-19: bottom right, clockwise
+#     np.array([1, 18]),
+#     np.array([28, 1]),
+#     np.array([28, 18]),
+#     np.array([1, 18]),
+#     # 20-22: top left anti-clockwise
+#     np.array([28, 1]),
+#     np.array([1, 1]),
+#     np.array([1, 18]),
+#     # 23-26: zig zag left to right
+#     np.array([15, 1]),
+#     np.array([15, 18]),
+#     np.array([28, 1]),
+#     np.array([28, 18]),
+#     # 27-30: zig zag top to bottom
+#     np.array([1, 10]),
+#     np.array([28, 10]),
+#     np.array([1, 1]),
+#     np.array([28, 1]),
+# ]
+MOMENTUM = 20
 
 
 def init_population(size: int) -> list[np.ndarray]:
@@ -46,7 +91,8 @@ def init_population(size: int) -> list[np.ndarray]:
 
     Returns: population - list of genomes(arrays)
     """
-    return [rng.choice([1.0, 0.0, -1.0, 0.5, -0.5], size=SHAPE) for _ in range(size)]
+    # return [np.array(next(ALL_GENOMES)).reshape(SHAPE) for _ in range(size)]
+    return [rng.choice([0.0, 1.0, -1.0], size=SHAPE) for _ in range(size)]
 
 
 def init_games(population: list[np.ndarray]) -> list[GAGame]:
@@ -111,17 +157,16 @@ def eval_fitness(game: GAGame) -> float:
     # fitness -= steps_penalty
     # info["steps_penalty"] = steps_penalty
 
-    # # steps penalty: 0 if the most efficient path
-    # # otherwise linearly increasing
-    # steps_penalty = max(0, game.steps / np.sum(game.apple.min_nsteps_needed) - 1)
-    # fitness -= steps_penalty
-    # info["steps_penalty"] = steps_penalty
+    # steps penalty: 0 if the most efficient path, otherwise linearly increasing
+    steps_penalty = max(0, game.snake.steps / np.sum(game.apple._min_steps_needed) - 1)
+    fitness -= 2 * steps_penalty
+    info["steps_penalty"] = steps_penalty
 
-    # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
-    last_steps = game.coords_stepped[-100:]
-    cycling_penalty = 1 - np.unique(last_steps, axis=0).shape[0] / len(last_steps)
-    fitness -= 2 * cycling_penalty
-    info["cycling_penalty"] = cycling_penalty
+    # # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
+    # last_steps = game.snake.coords_history[-100:]
+    # cycling_penalty = 1 - np.unique(last_steps, axis=0).shape[0] / len(last_steps)
+    # fitness -= 2 * cycling_penalty
+    # info["cycling_penalty"] = cycling_penalty
 
     # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance
     # (diagonal), otherwise linearly decreasing
@@ -251,6 +296,17 @@ def _get_alphas(pop_size: int) -> np.ndarray:
     alphas = 63 * np.ones(pop_size)
     alphas[-1] = 255
     return alphas
+
+
+# def get_apple_sequence(gen: int, length: int = 100) -> list[np.ndarray]:
+#     gen_rng = np.random.default_rng(seed=gen)  # deterministic per gen
+#     coords = []
+#     for _ in range(length):
+#         x = gen_rng.integers(0, NCOLS)
+#         y = gen_rng.integers(0, NROWS)
+#         # CAN BE IN WALL !!
+#         coords.append(np.array([x, y]))
+#     return coords
 
 
 def main() -> None:
@@ -385,7 +441,7 @@ def main() -> None:
 
         # render plots
         renderer.render_history_plot(
-            np.max(fitness_history, axis=1), np.mean(fitness_history, axis=1)
+            np.max(fitness_history, axis=1), np.mean(fitness_history, axis=1), MOMENTUM
         )
 
         renderer.render_genome_plot(
@@ -396,9 +452,9 @@ def main() -> None:
         )
         pygame.display.update()
 
-        if gen % 20 == 0:
+        if gen % MOMENTUM == 0:
             # eval and sort in place
-            avg_fitness = np.mean(np.transpose(fitness_history[-5:]), axis=1)
+            avg_fitness = np.mean(np.transpose(fitness_history[-MOMENTUM:]), axis=1)
             order_desc = np.argsort(avg_fitness)[::-1]
             games = [games[idx] for idx in order_desc]
             population = [population[idx] for idx in order_desc]

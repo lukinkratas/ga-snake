@@ -32,12 +32,24 @@ uv run --group ga train_ga.py
 
   2. **Feature focus:**
 
-    Because deterministic apple (predefined positions for training) is being used, genome is learning single feature at a time. (When random apple was used, selection tended to prefer genomes, that had the apple right in front of them randomly by accident, not by learning any feature.)
-
     Adjusted features are selected randomly. There is no mechanism of keeping good features, that might be very useful later.
 
-  3. **Learned features persistance:**
+### Apple positions decision
 
-    In case of random or pseudorandom apple, when feature is finally leaned, e.g.: turning down, if it sucks on other features, it can still get eliminated from the selection next gen.
+  1. Random apple
+    Random apple positions - different for every generation, different for every game
+    Issue: Uncomparable fitness / noisy selection - prefers genomes, that had the apples randomly generated in front of them, instead of learning any features.
+
+  2. Deterministic apple
+    Predefined apple positions - same for every generation, same for every game
+    This solves the random apple issue, because all genomes train on the same apple positions per generation.
+    Issue: Being stuck for quite a long time learning a specific feature, bcs the select population is less fit.
+    Minor issue: Some mutations / crossovers might have valuable insights about a certain features, but get eliminated, cause they are not useful at the moment.
+
+  3. Pseudo random apple
+    Random apple positions - different for every generation, but same for every game
+    This solves the deterministic apple issue, because genomes are constantly learning new features.
+    Issue: No learned features persistance - genomes with some features alread learned, can get eliminated a few genenerations down the line, bcs they do not perform well on current set of randomly generated apple positions.
+    Solution: Evaluate fitness and select next generation with momentum (after n generations)
 
 https://github.com/user-attachments/assets/9097a2af-d041-4078-a492-54cf8ffe0297

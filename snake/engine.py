@@ -5,11 +5,7 @@ import numpy as np
 import pygame
 
 from .const import DIRECTIONS, DOWN, LEFT, RIGHT, UP
-from .state import (
-    Apple,
-    Snake,
-    Wall,
-)
+from .state import Apple, Snake, Wall
 
 logger = logging.getLogger(__name__)
 
@@ -298,20 +294,9 @@ class GAGame(Game):
     ) -> None:
         super().__init__(ncols, nrows, player, wall, snake, apple)
 
-    @property
-    def steps(self) -> int:
-        """Number of steps."""
-        return len(self.coords_stepped)
-
-    def reset(self) -> None:
-        """Reset the game and corresponding assets - player, snake, apple to default state."""  # noqa E501
-        self.coords_stepped = []
-        super().reset()
-
     def step(self) -> None:
         """Do a game step - player controller sets direction, snake moves, evaluate the state."""  # noqa E501
         features = self.player.controller.eval_state(self.snake, self.apple, self.wall)
         direction = self.player.controller.set_dir(features)
         self.snake.move(direction)
-        self.coords_stepped.append(self.snake.head_coords.copy())
         return self.eval_state()

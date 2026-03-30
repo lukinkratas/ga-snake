@@ -485,7 +485,10 @@ class Renderer:
         render_text_on_rect(self.game_surf, text, self.font_bold, font_color, rect)
 
     def render_history_plot(
-        self, best_fitness_history: list[float], avg_fitness_history: list[float]
+        self,
+        best_fitness_history: list[float],
+        avg_fitness_history: list[float],
+        momentum: int | None = None,
     ) -> None:
         """Render matplotlib plot on the screen.
 
@@ -500,6 +503,9 @@ class Renderer:
         self.history_ax.plot(
             xs, avg_fitness_history, label="avg", color="tab:orange", linewidth=2.0
         )
+        if momentum:
+            for x in np.arange(momentum, ngens + 1, momentum, dtype=np.int16):
+                self.history_ax.axvline(x, color="tab:grey")
 
         self.history_ax.set_title("Fitness per Generation", fontweight="bold")
         self.history_ax.set_xlabel("Generation", fontsize=self.font_size)
