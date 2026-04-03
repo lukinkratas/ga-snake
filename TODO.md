@@ -1,6 +1,10 @@
 - [ ] lint
 - [ ] test binary apple feature ?
 - [ ] test hidden layer 8-12-4 ?
+- [x] render plot - avg per set fitness
+- [x] eval fitness based on max, cause that one has learned some features
+- [x] select elites based on max fitness from any of the arenas
+- [x] training arenas + one random
 - [x] remove random and pseudorandom apple class
 - [x] evaluating fitness as avg per 5 gens
 - [x] GAGame has_started to be used in play_ga

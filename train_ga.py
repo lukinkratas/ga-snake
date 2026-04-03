@@ -38,49 +38,137 @@ NSTEPS = 600
 BEST_GENOMES_DIR = Path("best_genomes")
 
 SHAPE = (len(GAController.FEATURE_NAMES), len(DIRECTIONS))
-# ALL_GENOMES = product([0.0, 1.0, -1.0], repeat=32)
-# COORDS = [
-#     # 1-4: mid of wall, clockwise
-#     np.array([15, 18]),
-#     np.array([1, 10]),
-#     np.array([15, 1]),
-#     np.array([28, 10]),
-#     # 5: mid
-#     np.array([15, 10]),
-#     # 6-9: every corner, anti-clockwise
-#     np.array([28, 1]),
-#     np.array([1, 1]),
-#     np.array([1, 18]),
-#     np.array([28, 18]),
-#     # 10-12: top right triangle, clockwise
-#     np.array([1, 1]),
-#     np.array([28, 1]),
-#     np.array([28, 18]),
-#     # 13-15: bottom left triangle, anti-clockwise
-#     np.array([1, 1]),
-#     np.array([1, 18]),
-#     np.array([28, 18]),
-#     # 16-19: bottom right, clockwise
-#     np.array([1, 18]),
-#     np.array([28, 1]),
-#     np.array([28, 18]),
-#     np.array([1, 18]),
-#     # 20-22: top left anti-clockwise
-#     np.array([28, 1]),
-#     np.array([1, 1]),
-#     np.array([1, 18]),
-#     # 23-26: zig zag left to right
-#     np.array([15, 1]),
-#     np.array([15, 18]),
-#     np.array([28, 1]),
-#     np.array([28, 18]),
-#     # 27-30: zig zag top to bottom
-#     np.array([1, 10]),
-#     np.array([28, 10]),
-#     np.array([1, 1]),
-#     np.array([28, 1]),
-# ]
-MOMENTUM = 20
+TRAINING_SETS = [
+    [
+        # 0: mid of wall, clockwise
+        np.array([15, 18]),
+        np.array([1, 10]),
+        np.array([15, 1]),
+        np.array([28, 10]),
+        np.array([15, 15]),
+        np.array([10, 10]),
+        np.array([15, 5]),
+        np.array([20, 10]),
+        np.array([15, 11]),
+        np.array([14, 10]),
+        np.array([15, 9]),
+        np.array([16, 10]),
+    ],
+    [
+        # 1: every corner, anti-clockwise
+        np.array([28, 1]),
+        np.array([1, 1]),
+        np.array([1, 18]),
+        np.array([28, 18]),
+        np.array([20, 5]),
+        np.array([10, 5]),
+        np.array([10, 15]),
+        np.array([20, 15]),
+        np.array([16, 9]),
+        np.array([14, 9]),
+        np.array([14, 11]),
+        np.array([16, 11]),
+    ],
+    [
+        # 2: mid of wall, back to mid, anti-clockwise
+        np.array([15, 1]),
+        np.array([15, 10]),
+        np.array([1, 10]),
+        np.array([15, 10]),
+        np.array([15, 18]),
+        np.array([15, 10]),
+        np.array([28, 10]),
+        np.array([15, 10]),
+    ],
+    [
+        # 3: every corner, back to mid, clockwise
+        np.array([28, 18]),
+        np.array([15, 10]),
+        np.array([1, 18]),
+        np.array([15, 10]),
+        np.array([1, 1]),
+        np.array([15, 10]),
+        np.array([28, 1]),
+        np.array([15, 10]),
+    ],
+    [
+        # 4: eight
+        np.array([28, 18]),
+        np.array([15, 18]),
+        np.array([15, 10]),
+        np.array([15, 1]),
+        np.array([1, 1]),
+        np.array([1, 10]),
+        np.array([15, 10]),
+        np.array([15, 1]),
+        np.array([28, 1]),
+        np.array([28, 10]),
+        np.array([15, 10]),
+        np.array([1, 10]),
+        np.array([1, 18]),
+        np.array([15, 18]),
+        np.array([15, 10]),
+    ],
+    [
+        # 5: triangles
+        np.array([28, 18]),
+        np.array([1, 18]),
+        np.array([1, 1]),
+        np.array([28, 18]),
+        np.array([28, 1]),
+        np.array([1, 1]),
+        np.array([28, 18]),
+        np.array([1, 18]),
+        np.array([28, 1]),
+        np.array([28, 18]),
+        np.array([1, 18]),
+        np.array([28, 1]),
+        np.array([1, 1]),
+        np.array([1, 18]),
+    ],
+    [
+        # 6: zig zags
+        np.array([28, 18]),
+        np.array([1, 10]),
+        np.array([28, 10]),
+        np.array([1, 1]),
+        np.array([28, 1]),
+        np.array([15, 18]),
+        np.array([15, 1]),
+        np.array([1, 18]),
+        np.array([1, 1]),
+    ],
+    [
+        # 7: side to side
+        np.array([1, 18]),
+        np.array([1, 1]),
+        np.array([2, 18]),
+        np.array([2, 1]),
+        np.array([3, 18]),
+        np.array([3, 1]),
+        np.array([4, 18]),
+        np.array([4, 1]),
+        np.array([5, 18]),
+        np.array([5, 1]),
+        np.array([6, 18]),
+        np.array([6, 1]),
+        np.array([28, 1]),
+        np.array([1, 2]),
+        np.array([28, 2]),
+        np.array([1, 3]),
+        np.array([28, 3]),
+        np.array([1, 4]),
+        np.array([28, 4]),
+        np.array([1, 5]),
+        np.array([28, 5]),
+        np.array([1, 6]),
+        np.array([28, 6]),
+    ],
+]
+# Number of rounds per generation, if larger than training rounds -> extra rounds are random
+NROUNDS = len(TRAINING_SETS) + 1
+# selection momentum - number of gens after which selection occurs
+MOMENTUM = NROUNDS
 
 
 def init_population(size: int) -> list[np.ndarray]:
@@ -91,7 +179,6 @@ def init_population(size: int) -> list[np.ndarray]:
 
     Returns: population - list of genomes(arrays)
     """
-    # return [np.array(next(ALL_GENOMES)).reshape(SHAPE) for _ in range(size)]
     return [rng.choice([0.0, 1.0, -1.0], size=SHAPE) for _ in range(size)]
 
 
@@ -157,16 +244,16 @@ def eval_fitness(game: GAGame) -> float:
     # fitness -= steps_penalty
     # info["steps_penalty"] = steps_penalty
 
-    # steps penalty: 0 if the most efficient path, otherwise linearly increasing
-    steps_penalty = max(0, game.snake.steps / np.sum(game.apple._min_steps_needed) - 1)
-    fitness -= 2 * steps_penalty
-    info["steps_penalty"] = steps_penalty
+    # # steps penalty: 0 if the most efficient path, otherwise linearly increasing
+    # steps_penalty = max(0, game.snake.steps / np.sum(game.apple._min_steps_needed) - 1)
+    # fitness -= 2 * steps_penalty
+    # info["steps_penalty"] = steps_penalty
 
-    # # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
-    # last_steps = game.snake.coords_history[-100:]
-    # cycling_penalty = 1 - np.unique(last_steps, axis=0).shape[0] / len(last_steps)
-    # fitness -= 2 * cycling_penalty
-    # info["cycling_penalty"] = cycling_penalty
+    # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
+    last_steps = game.snake.coords_history[-100:]
+    cycling_penalty = 1 - np.unique(last_steps, axis=0).shape[0] / len(last_steps)
+    fitness -= 2 * cycling_penalty
+    info["cycling_penalty"] = cycling_penalty
 
     # apple_dist_penalty: 1 if distance from apple to snake's head is is max distance
     # (diagonal), otherwise linearly decreasing
@@ -221,7 +308,7 @@ def crossover(genome_a: np.ndarray, genome_b: np.ndarray) -> np.ndarray:
 
 
 def get_next_gen(
-    sorted_population: list[np.ndarray], progress: float
+    elites: list[np.ndarray], population: list[np.ndarray], progress: float
 ) -> list[np.ndarray]:
     """Get next generation population by mutations and crossovers."""
 
@@ -260,30 +347,27 @@ def get_next_gen(
             )
         ]
 
-    ngenomes = len(sorted_population)
-    nelites = int(0.05 * ngenomes)
-
-    elites = sorted_population[:nelites]
-    rest = sorted_population[nelites:]
-    top_half = sorted_population[nelites : int(0.50 * ngenomes)]
+    ngenomes = len(population)
 
     # keep elites unchanged
     next_gen = elites.copy()
 
     mutated_genomes = get_mutated_genomes(
-        elites, size=int(0.10 * ngenomes), progress=progress
+        elites, size=int(0.30 * ngenomes), progress=progress
     )
     next_gen.extend(mutated_genomes)
 
     mutated_genomes = get_mutated_genomes(
-        top_half, size=int(0.30 * ngenomes), progress=progress
+        population, size=int(0.10 * ngenomes), progress=progress
     )
     next_gen.extend(mutated_genomes)
 
-    crossover_genomes = get_crossover_genomes(elites, elites, size=int(0.10 * ngenomes))
+    crossover_genomes = get_crossover_genomes(elites, elites, size=int(0.30 * ngenomes))
     next_gen.extend(crossover_genomes)
 
-    crossover_genomes = get_crossover_genomes(elites, rest, size=int(0.35 * ngenomes))
+    crossover_genomes = get_crossover_genomes(
+        elites, population, size=int(0.10 * ngenomes)
+    )
     next_gen.extend(crossover_genomes)
 
     # inject random immigrants
@@ -307,6 +391,18 @@ def _get_alphas(pop_size: int) -> np.ndarray:
 #         # CAN BE IN WALL !!
 #         coords.append(np.array([x, y]))
 #     return coords
+
+
+def select_elites(
+    fitness_history: list[list[float]], population: list[np.ndarray], size: int
+):
+    momentum = len(fitness_history)
+    elites = []
+    for fitness in fitness_history:
+        order_desc = np.argsort(fitness)[::-1]
+        elites.extend([population[idx] for idx in order_desc[: int(size / momentum)]])
+
+    return elites
 
 
 def main() -> None:
@@ -370,8 +466,13 @@ def main() -> None:
     )
 
     is_running = True
-    for gen in range(1, NGENS + 1):
+    for gen in range(NGENS):
         logger.info(f"New gen {gen}")
+
+        training_idx = gen % NROUNDS
+        training_set = (
+            TRAINING_SETS[training_idx] if training_idx < len(TRAINING_SETS) else []
+        )
 
         renderer.render_games(games[::-1], alphas=_get_alphas(NGENOMES))
         renderer.render_scoreboard(games, gen)
@@ -380,7 +481,6 @@ def main() -> None:
         pygame.time.delay(1000)
 
         recorder = ScreenRecorder(FPS).start_rec()
-        apple_coords_generated = []
 
         # gen loop
         for _ in range(NSTEPS):
@@ -402,15 +502,19 @@ def main() -> None:
                     apple_eaten = game.step()
 
                     if apple_eaten:
-                        coords = apple_coords_generated[game.apple.idx]
+                        # infinite loop - if apple coords, exceeded, start from first idx
+                        coords = training_set[game.apple.idx % len(training_set)]
                         game.apple.move(coords)
 
-                    if game.apple.idx >= len(apple_coords_generated):
+                    # last training round (random), append apples on the fly
+                    if training_idx >= len(TRAINING_SETS) and game.apple.idx >= len(
+                        training_set
+                    ):
                         xrange = np.arange(NCOLS)
                         yrange = np.arange(NROWS)
                         exclude = get_exclude_coords(games)
-                        new_apple_coords = get_free_coords(xrange, yrange, exclude)
-                        apple_coords_generated.append(new_apple_coords)
+                        coords = get_free_coords(xrange, yrange, exclude)
+                        training_set.append(coords)
 
             # render games based on orig order
             renderer.render_games(games[::-1], alphas=_get_alphas(NGENOMES))
@@ -440,10 +544,7 @@ def main() -> None:
         best_idx = order_desc[0]
 
         # render plots
-        renderer.render_history_plot(
-            np.max(fitness_history, axis=1), np.mean(fitness_history, axis=1), MOMENTUM
-        )
-
+        renderer.render_history_plot(fitness_history, MOMENTUM)
         renderer.render_genome_plot(
             population[best_idx],
             color=np.array(games[best_idx].player.color) / 255,
@@ -452,23 +553,23 @@ def main() -> None:
         )
         pygame.display.update()
 
-        if gen % MOMENTUM == 0:
-            # eval and sort in place
-            avg_fitness = np.mean(np.transpose(fitness_history[-MOMENTUM:]), axis=1)
-            order_desc = np.argsort(avg_fitness)[::-1]
-            games = [games[idx] for idx in order_desc]
-            population = [population[idx] for idx in order_desc]
+        if gen % MOMENTUM == 0 and gen > 0:
+            # eval
+            fitness = np.mean(np.transpose(fitness_history[-MOMENTUM:]), axis=1)
+            order_desc = np.argsort(fitness)[::-1]
+            best_idx = order_desc[0]
 
             # save best genome
-            best_genome = population[0]
-            logger.debug(f"best genome: {best_genome}")
             np.save(
                 BEST_GENOMES_DIR.joinpath(f"best_genome_{ts}.npy"),
-                best_genome,
+                population[best_idx],
             )
 
             # set next gen
-            population = get_next_gen(population, progress=gen / NGENS)
+            elites = select_elites(
+                fitness_history[-MOMENTUM:], population, size=int(0.10 * NGENOMES)
+            )
+            population = get_next_gen(elites, population, progress=gen / NGENS)
             set_population(games, population)
 
         reset_games(games)

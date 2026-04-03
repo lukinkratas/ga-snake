@@ -57,7 +57,10 @@ def get_exclude_coords(games: list[Game]) -> list[np.ndarray]:
 
 
 def get_free_coords(
-    xrange: np.ndarray, yrange: np.ndarray, exclude: list[np.ndarray]
+    xrange: np.ndarray,
+    yrange: np.ndarray,
+    exclude: list[np.ndarray],
+    size: int | None = None,
 ) -> list[np.ndarray]:
     """Helper method used for setting free coordinates for apple placement."""
     all_coords = np.array(list(product(xrange, yrange)))  # shape: (N, 2)
@@ -68,4 +71,4 @@ def get_free_coords(
     is_excluded = np.any(
         np.all(all_coords[:, None] == exclude_arr[None, :], axis=2), axis=1
     )
-    return rng.choice(all_coords[~is_excluded])
+    return rng.choice(all_coords[~is_excluded], size)

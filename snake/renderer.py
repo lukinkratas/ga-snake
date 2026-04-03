@@ -278,13 +278,19 @@ class Renderer:
             line_width=self.line_width,
             radius=int(0.8 * self.grid_size / 2),
         )
+        render_text_on_rect(
+            surf=self.game_surf,
+            text=str(apple.idx + 1),
+            font=self.font,
+            font_color=(50, 50, 50, alpha),
+            rect=rect,
+        )
 
     def render_snake(
         self,
         snake: Snake,
         color: tuple[int, int, int],
         alpha: int,
-        name: str | None = None,
     ) -> None:
         """Render snake on the screen.
 
@@ -292,7 +298,6 @@ class Renderer:
             snake: snake
             color: color to render the snake with
             alpha: opacity to render the snake with
-            name: name to render on the snake's head
         """
         extra_radius = 10
         common_kwargs = {
@@ -330,15 +335,6 @@ class Renderer:
         head_rect = self.get_square(snake.head_coords * self.grid_size)
         render_rect(rect=head_rect, **common_kwargs, **head_kwargs)
 
-        if name:
-            render_text_on_rect(
-                surf=self.game_surf,
-                text=name,
-                font=self.font,
-                font_color=(50, 50, 50, alpha),
-                rect=head_rect,
-            )
-
     def render_games(
         self, games: list[Game], alphas: Sequence[int] | None = None
     ) -> None:
@@ -365,8 +361,12 @@ class Renderer:
         # separate for loop, bcs I want the snakes to be visible on top of wall
         for game, alpha in zip(games, alphas):
             alpha = alpha if game.snake.is_alive else 31
-            self.render_apple(game.apple, game.player.color, alpha)
             self.render_snake(game.snake, game.player.color, alpha)
+
+        # separate for loop, bcs I want the apples to be visible on top of snakes
+        for game, alpha in zip(games, alphas):
+            alpha = alpha if game.snake.is_alive else 31
+            self.render_apple(game.apple, game.player.color, alpha)
 
     def render_player_row(self, game: Game, row_rect: pygame.Rect) -> None:
         """Render row per game/player in the scoreboard.
@@ -486,8 +486,7 @@ class Renderer:
 
     def render_history_plot(
         self,
-        best_fitness_history: list[float],
-        avg_fitness_history: list[float],
+        fitness_history: list[list[float]],
         momentum: int | None = None,
     ) -> None:
         """Render matplotlib plot on the screen.
@@ -496,15 +495,41 @@ class Renderer:
             best_fitness_history: list of max fitness per generation
             avg_fitness_history: list of average fitness per generation
         """
-        ngens = len(best_fitness_history)
+        ngens = len(fitness_history)
         self.history_ax.clear()
-        xs = np.arange(1, ngens + 1, dtype=np.int16)
-        self.history_ax.bar(xs, best_fitness_history, label="max", color="tab:blue")
+        gens = np.arange(ngens, dtype=np.int16)
+
+        best_per_gen = np.max(fitness_history, axis=1)
+        self.history_ax.bar(gens, best_per_gen, label="max", color="tab:blue")
+
+        avg_per_gen = np.mean(fitness_history, axis=1)
         self.history_ax.plot(
-            xs, avg_fitness_history, label="avg", color="tab:orange", linewidth=2.0
+            gens,
+            avg_per_gen,
+            label="avg per gen",
+            color="tab:orange",
+            linewidth=2.0,
         )
+
         if momentum:
-            for x in np.arange(momentum, ngens + 1, momentum, dtype=np.int16):
+            # plot avg per set
+            sets = np.arange(momentum, ngens + 1, momentum, dtype=np.int16)
+            if sets.shape[0] > 0:
+                fitness_sets = np.array_split(fitness_history, sets)
+                # first avg gives avg per genome in the splitted sets
+                # second avg gives avg per set
+                # omit the last one, as it is incomplete
+                avg_per_set = np.mean(np.mean(fitness_sets[:-1], axis=1), axis=1)
+                self.history_ax.plot(
+                    sets,
+                    avg_per_set,
+                    label="avg per set",
+                    color="tab:purple",
+                    linewidth=2.0,
+                )
+
+            # plot set div
+            for x in sets:
                 self.history_ax.axvline(x, color="tab:grey")
 
         self.history_ax.set_title("Fitness per Generation", fontweight="bold")
@@ -513,7 +538,7 @@ class Renderer:
         self.history_ax.legend(loc="upper left", fontsize=self.font_size, frameon=False)
 
         # needed to invoke dtype on axis
-        nx = np.linspace(0, ngens + 1, num=min(ngens + 2, 12), dtype=np.int16)
+        nx = np.linspace(0, ngens, num=min(ngens + 2, 12), dtype=np.int16)
         self.history_ax.set_xticks(nx)
 
         # plt.tight_layout(pad=6.0)

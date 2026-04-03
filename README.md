@@ -47,9 +47,7 @@ uv run --group ga train_ga.py
     Minor issue: Some mutations / crossovers might have valuable insights about a certain features, but get eliminated, cause they are not useful at the moment.
 
   3. Pseudo random apple
-    Random apple positions - different for every generation, but same for every game
-    This solves the deterministic apple issue, because genomes are constantly learning new features.
-    Issue: No learned features persistance - genomes with some features alread learned, can get eliminated a few genenerations down the line, bcs they do not perform well on current set of randomly generated apple positions.
-    Solution: Evaluate fitness and select next generation with momentum (after n generations)
+    Random apple positions - set of training positions plus one random for every generation, but same for every game
+    This solves the deterministic apple issue, because genomes are constantly learning both seen features and arenas as well as random nes.
 
 https://github.com/user-attachments/assets/9097a2af-d041-4078-a492-54cf8ffe0297
