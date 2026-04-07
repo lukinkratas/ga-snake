@@ -14,7 +14,6 @@ from snake.engine import GAController, GAGame, Player
 from snake.renderer import Renderer
 from snake.state import Apple, Snake
 from snake.utils import (
-    get_exclude_coords,
     get_free_coords,
     get_random_color,
     get_squared_wall,
@@ -38,137 +37,8 @@ NSTEPS = 600
 BEST_GENOMES_DIR = Path("best_genomes")
 
 SHAPE = (len(GAController.FEATURE_NAMES), len(DIRECTIONS))
-TRAINING_SETS = [
-    [
-        # 0: mid of wall, clockwise
-        np.array([15, 18]),
-        np.array([1, 10]),
-        np.array([15, 1]),
-        np.array([28, 10]),
-        np.array([15, 15]),
-        np.array([10, 10]),
-        np.array([15, 5]),
-        np.array([20, 10]),
-        np.array([15, 11]),
-        np.array([14, 10]),
-        np.array([15, 9]),
-        np.array([16, 10]),
-    ],
-    [
-        # 1: every corner, anti-clockwise
-        np.array([28, 1]),
-        np.array([1, 1]),
-        np.array([1, 18]),
-        np.array([28, 18]),
-        np.array([20, 5]),
-        np.array([10, 5]),
-        np.array([10, 15]),
-        np.array([20, 15]),
-        np.array([16, 9]),
-        np.array([14, 9]),
-        np.array([14, 11]),
-        np.array([16, 11]),
-    ],
-    [
-        # 2: mid of wall, back to mid, anti-clockwise
-        np.array([15, 1]),
-        np.array([15, 10]),
-        np.array([1, 10]),
-        np.array([15, 10]),
-        np.array([15, 18]),
-        np.array([15, 10]),
-        np.array([28, 10]),
-        np.array([15, 10]),
-    ],
-    [
-        # 3: every corner, back to mid, clockwise
-        np.array([28, 18]),
-        np.array([15, 10]),
-        np.array([1, 18]),
-        np.array([15, 10]),
-        np.array([1, 1]),
-        np.array([15, 10]),
-        np.array([28, 1]),
-        np.array([15, 10]),
-    ],
-    [
-        # 4: eight
-        np.array([28, 18]),
-        np.array([15, 18]),
-        np.array([15, 10]),
-        np.array([15, 1]),
-        np.array([1, 1]),
-        np.array([1, 10]),
-        np.array([15, 10]),
-        np.array([15, 1]),
-        np.array([28, 1]),
-        np.array([28, 10]),
-        np.array([15, 10]),
-        np.array([1, 10]),
-        np.array([1, 18]),
-        np.array([15, 18]),
-        np.array([15, 10]),
-    ],
-    [
-        # 5: triangles
-        np.array([28, 18]),
-        np.array([1, 18]),
-        np.array([1, 1]),
-        np.array([28, 18]),
-        np.array([28, 1]),
-        np.array([1, 1]),
-        np.array([28, 18]),
-        np.array([1, 18]),
-        np.array([28, 1]),
-        np.array([28, 18]),
-        np.array([1, 18]),
-        np.array([28, 1]),
-        np.array([1, 1]),
-        np.array([1, 18]),
-    ],
-    [
-        # 6: zig zags
-        np.array([28, 18]),
-        np.array([1, 10]),
-        np.array([28, 10]),
-        np.array([1, 1]),
-        np.array([28, 1]),
-        np.array([15, 18]),
-        np.array([15, 1]),
-        np.array([1, 18]),
-        np.array([1, 1]),
-    ],
-    [
-        # 7: side to side
-        np.array([1, 18]),
-        np.array([1, 1]),
-        np.array([2, 18]),
-        np.array([2, 1]),
-        np.array([3, 18]),
-        np.array([3, 1]),
-        np.array([4, 18]),
-        np.array([4, 1]),
-        np.array([5, 18]),
-        np.array([5, 1]),
-        np.array([6, 18]),
-        np.array([6, 1]),
-        np.array([28, 1]),
-        np.array([1, 2]),
-        np.array([28, 2]),
-        np.array([1, 3]),
-        np.array([28, 3]),
-        np.array([1, 4]),
-        np.array([28, 4]),
-        np.array([1, 5]),
-        np.array([28, 5]),
-        np.array([1, 6]),
-        np.array([28, 6]),
-    ],
-]
-# Number of rounds per generation, if larger than training rounds -> extra rounds are random
-NROUNDS = len(TRAINING_SETS) + 1
 # selection momentum - number of gens after which selection occurs
-MOMENTUM = NROUNDS
+MOMENTUM = 9
 
 
 def init_population(size: int) -> list[np.ndarray]:
@@ -207,7 +77,7 @@ def init_games(population: list[np.ndarray]) -> list[GAGame]:
 
 
 def reset_games(games: list[GAGame]) -> None:
-    """Reset games from list and set new GA controllers from list.
+    """Reset games from list.
 
     Args:
         games: list of games
@@ -219,6 +89,12 @@ def reset_games(games: list[GAGame]) -> None:
 
 
 def set_population(games: list[GAGame], population: list[np.ndarray]) -> None:
+    """Set new GA controllers per each game from list.
+
+    Args:
+        games: list of games
+        population: list of genomes(arrays)
+    """
     for game, genome in zip(games, population):
         game.player.controller = GAController(NCOLS, NROWS, genome)
 
@@ -242,11 +118,6 @@ def eval_fitness(game: GAGame) -> float:
     # # I rather want it to be as efficient as possible
     # steps_penalty = 1 - game.steps / max_steps
     # fitness -= steps_penalty
-    # info["steps_penalty"] = steps_penalty
-
-    # # steps penalty: 0 if the most efficient path, otherwise linearly increasing
-    # steps_penalty = max(0, game.snake.steps / np.sum(game.apple._min_steps_needed) - 1)
-    # fitness -= 2 * steps_penalty
     # info["steps_penalty"] = steps_penalty
 
     # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
@@ -396,6 +267,15 @@ def _get_alphas(pop_size: int) -> np.ndarray:
 def select_elites(
     fitness_history: list[list[float]], population: list[np.ndarray], size: int
 ):
+    """Elites selection mechanism - n best performing from each training set.
+
+    Args:
+        fitness_history: list of fitnesses evaluated per sets
+        population: list of genomes(arrays)
+        size: length of returned list
+
+    Returns: elite genomes (list of genomes / arrays)
+    """
     momentum = len(fitness_history)
     elites = []
     for fitness in fitness_history:
@@ -403,6 +283,156 @@ def select_elites(
         elites.extend([population[idx] for idx in order_desc[: int(size / momentum)]])
 
     return elites
+
+
+def get_training_set(idx: int) -> list[np.ndarray] | None:
+    """Get coords for apple training set.
+
+    Args:
+        idx: training index
+
+    Returns: training coords for the apple
+    """
+    training_sets = [
+        [
+            # 0: mid of wall, clockwise
+            np.array([15, 18]),
+            np.array([1, 10]),
+            np.array([15, 1]),
+            np.array([28, 10]),
+            np.array([15, 15]),
+            np.array([10, 10]),
+            np.array([15, 5]),
+            np.array([20, 10]),
+            np.array([15, 11]),
+            np.array([14, 10]),
+            np.array([15, 9]),
+            np.array([16, 10]),
+        ],
+        [
+            # 1: every corner, anti-clockwise
+            np.array([28, 1]),
+            np.array([1, 1]),
+            np.array([1, 18]),
+            np.array([28, 18]),
+            np.array([20, 5]),
+            np.array([10, 5]),
+            np.array([10, 15]),
+            np.array([20, 15]),
+            np.array([16, 9]),
+            np.array([14, 9]),
+            np.array([14, 11]),
+            np.array([16, 11]),
+        ],
+        [
+            # 2: mid of wall, back to mid, anti-clockwise
+            np.array([15, 1]),
+            np.array([15, 10]),
+            np.array([1, 10]),
+            np.array([15, 10]),
+            np.array([15, 18]),
+            np.array([15, 10]),
+            np.array([28, 10]),
+            np.array([15, 10]),
+        ],
+        [
+            # 3: every corner, back to mid, clockwise
+            np.array([28, 18]),
+            np.array([15, 10]),
+            np.array([1, 18]),
+            np.array([15, 10]),
+            np.array([1, 1]),
+            np.array([15, 10]),
+            np.array([28, 1]),
+            np.array([15, 10]),
+        ],
+        [
+            # 4: eight
+            np.array([28, 18]),
+            np.array([15, 18]),
+            np.array([15, 10]),
+            np.array([15, 1]),
+            np.array([1, 1]),
+            np.array([1, 10]),
+            np.array([15, 10]),
+            np.array([15, 1]),
+            np.array([28, 1]),
+            np.array([28, 10]),
+            np.array([15, 10]),
+            np.array([1, 10]),
+            np.array([1, 18]),
+            np.array([15, 18]),
+            np.array([15, 10]),
+        ],
+        [
+            # 5: triangles
+            np.array([28, 18]),
+            np.array([1, 18]),
+            np.array([1, 1]),
+            np.array([28, 18]),
+            np.array([28, 1]),
+            np.array([1, 1]),
+            np.array([28, 18]),
+            np.array([1, 18]),
+            np.array([28, 1]),
+            np.array([28, 18]),
+            np.array([1, 18]),
+            np.array([28, 1]),
+            np.array([1, 1]),
+            np.array([1, 18]),
+        ],
+        [
+            # 6: zig zags
+            np.array([28, 18]),
+            np.array([1, 10]),
+            np.array([28, 10]),
+            np.array([1, 1]),
+            np.array([28, 1]),
+            np.array([15, 18]),
+            np.array([15, 1]),
+            np.array([1, 18]),
+            np.array([1, 1]),
+        ],
+        [
+            # 7: side to side
+            np.array([1, 18]),
+            np.array([1, 1]),
+            np.array([2, 18]),
+            np.array([2, 1]),
+            np.array([3, 18]),
+            np.array([3, 1]),
+            np.array([28, 1]),
+            np.array([1, 2]),
+            np.array([28, 2]),
+            np.array([1, 3]),
+            np.array([28, 3]),
+            np.array([1, 4]),
+        ],
+    ]
+    return training_sets[idx] if idx < 8 else None
+
+
+def get_random_training_set(
+    ncols: int, nrows: int, games: list[GAGame]
+) -> list[np.ndarray]:
+    """Get random coords for apple training set.
+
+    Args:
+        ncols: number of game columns - sets x range for training set coords
+        nrows: number of game rows - sets y range for training set coords
+        games: list of games - sets wall coords to be excluded from training set coords
+
+    Returns: random training coords for the apple
+    """
+    xrange = np.arange(ncols)
+    yrange = np.arange(nrows)
+
+    exclude = []
+    uniq_walls = {game.wall for game in games}
+    for wall in uniq_walls:
+        exclude.extend(wall.coords)
+
+    return get_free_coords(xrange, yrange, exclude, size=100)
 
 
 def main() -> None:
@@ -444,7 +474,6 @@ def main() -> None:
     genome_plot_surf = win.subsurface(genome_plot_rect)
 
     population = init_population(NGENOMES)
-    # game_pools and games flatten copy?
     games = init_games(population)
 
     ts = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -469,9 +498,10 @@ def main() -> None:
     for gen in range(NGENS):
         logger.info(f"New gen {gen}")
 
-        training_idx = gen % NROUNDS
-        training_set = (
-            TRAINING_SETS[training_idx] if training_idx < len(TRAINING_SETS) else []
+        # training set is either predefined or empty
+        # (later filled with random positions)
+        training_set = get_training_set(gen % MOMENTUM) or get_random_training_set(
+            NCOLS, NROWS, games
         )
 
         renderer.render_games(games[::-1], alphas=_get_alphas(NGENOMES))
@@ -502,27 +532,14 @@ def main() -> None:
                     apple_eaten = game.step()
 
                     if apple_eaten:
-                        # infinite loop - if apple coords, exceeded, start from first idx
+                        # infinite loop - if apple coords exceeded, start from first idx
                         coords = training_set[game.apple.idx % len(training_set)]
                         game.apple.move(coords)
 
-                    # last training round (random), append apples on the fly
-                    if training_idx >= len(TRAINING_SETS) and game.apple.idx >= len(
-                        training_set
-                    ):
-                        xrange = np.arange(NCOLS)
-                        yrange = np.arange(NROWS)
-                        exclude = get_exclude_coords(games)
-                        coords = get_free_coords(xrange, yrange, exclude)
-                        training_set.append(coords)
-
-            # render games based on orig order
-            renderer.render_games(games[::-1], alphas=_get_alphas(NGENOMES))
-
-            # render scoreboard sorted
             fitness = [eval_fitness(game) for game in games]
             order_desc = np.argsort(fitness)[::-1]
             sorted_games_desc = [games[idx] for idx in order_desc]
+            renderer.render_games(sorted_games_desc[::-1], alphas=_get_alphas(NGENOMES))
             renderer.render_scoreboard(sorted_games_desc, gen=gen)
             pygame.display.update()
 
@@ -541,15 +558,15 @@ def main() -> None:
         fitness = [eval_fitness(game) for game in games]
         fitness_history.append(fitness.copy())
         order_desc = np.argsort(fitness)[::-1]
-        best_idx = order_desc[0]
 
         # render plots
         renderer.render_history_plot(fitness_history, MOMENTUM)
+        best_game = games[order_desc[0]]
         renderer.render_genome_plot(
-            population[best_idx],
-            color=np.array(games[best_idx].player.color) / 255,
-            name=games[best_idx].player.name,
-            fitness=fitness[best_idx],
+            best_game.player.controller.genome,
+            color=np.array(best_game.player.color) / 255,
+            name=best_game.player.name,
+            fitness=fitness[order_desc[0]],
         )
         pygame.display.update()
 

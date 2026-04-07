@@ -34,7 +34,7 @@ uv run --group ga train_ga.py
 
     Adjusted features are selected randomly. There is no mechanism of keeping good features, that might be very useful later.
 
-### Apple positions decision
+#### Apple positions decision
 
   1. Random apple
     Random apple positions - different for every generation, different for every game
@@ -49,5 +49,11 @@ uv run --group ga train_ga.py
   3. Pseudo random apple
     Random apple positions - set of training positions plus one random for every generation, but same for every game
     This solves the deterministic apple issue, because genomes are constantly learning both seen features and arenas as well as random nes.
+
+### GA Play - watch how your trained genome performs on random apple positions
+
+```bash
+uv run play_ga.py
+```
 
 https://github.com/user-attachments/assets/9097a2af-d041-4078-a492-54cf8ffe0297

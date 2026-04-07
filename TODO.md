@@ -1,6 +1,8 @@
 - [ ] lint
 - [ ] test binary apple feature ?
 - [ ] test hidden layer 8-12-4 ?
+- [ ] fitness per Generation plot - last 100 subplot if ngens > 200
+- [x] random training set - predefined 100 positions, instead of appedning on the fly?
 - [x] render plot - avg per set fitness
 - [x] eval fitness based on max, cause that one has learned some features
 - [x] select elites based on max fitness from any of the arenas

@@ -44,6 +44,13 @@ def get_squared_wall(ncols: int, nrows: int) -> Wall:
 
 
 def get_exclude_coords(games: list[Game]) -> list[np.ndarray]:
+    """Get snake and wall cooords from all games to be excluded.
+
+    Args:
+        games: list of games
+
+    Returns: list of coords to be excluded.
+    """
     exclude = []
 
     uniq_walls = {game.wall for game in games}

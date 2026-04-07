@@ -492,22 +492,22 @@ class Renderer:
         """Render matplotlib plot on the screen.
 
         Args:
-            best_fitness_history: list of max fitness per generation
-            avg_fitness_history: list of average fitness per generation
+            fitness_history: list of fitnesses evaluated per sets
+            momentum: number of gens after which the selection occurs
         """
         ngens = len(fitness_history)
         self.history_ax.clear()
         gens = np.arange(ngens, dtype=np.int16)
 
         best_per_gen = np.max(fitness_history, axis=1)
-        self.history_ax.bar(gens, best_per_gen, label="max", color="tab:blue")
+        self.history_ax.bar(gens, best_per_gen, label="max", color="tab:olive")
 
         avg_per_gen = np.mean(fitness_history, axis=1)
         self.history_ax.plot(
             gens,
             avg_per_gen,
             label="avg per gen",
-            color="tab:orange",
+            color="tab:cyan",
             linewidth=2.0,
         )
 
@@ -521,7 +521,7 @@ class Renderer:
                 # omit the last one, as it is incomplete
                 avg_per_set = np.mean(np.mean(fitness_sets[:-1], axis=1), axis=1)
                 self.history_ax.plot(
-                    sets,
+                    sets - 0.5,
                     avg_per_set,
                     label="avg per set",
                     color="tab:purple",
@@ -530,7 +530,7 @@ class Renderer:
 
             # plot set div
             for x in sets:
-                self.history_ax.axvline(x, color="tab:grey")
+                self.history_ax.axvline(x - 0.5, color="tab:grey")
 
         self.history_ax.set_title("Fitness per Generation", fontweight="bold")
         self.history_ax.set_xlabel("Generation", fontsize=self.font_size)

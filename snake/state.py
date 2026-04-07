@@ -27,16 +27,6 @@ class Apple:
         self.coords_history.append(self.coords)
         self.idx += 1
 
-    @property
-    def _vecs(self) -> np.ndarray:
-        return np.diff(
-            np.concatenate(([Snake.INIT_HEAD_COORDS], self.coords_history)), axis=0
-        )
-
-    @property
-    def _min_steps_needed(self) -> np.ndarray:
-        return np.sum(np.abs(self._vecs), axis=1)
-
 
 class Snake:
     INIT_HEAD_COORDS = np.array([10, 10])
@@ -76,10 +66,6 @@ class Snake:
     def tail_dir(self) -> np.ndarray:
         """Direction of snake's tail. Used for extending."""
         return self.dirs_q[-1]
-
-    @property
-    def steps(self) -> int:
-        return len(self.coords_history)
 
     def move(self, direction: np.ndarray | None) -> None:
         """Move the snake in direction.
