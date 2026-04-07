@@ -253,17 +253,6 @@ def _get_alphas(pop_size: int) -> np.ndarray:
     return alphas
 
 
-# def get_apple_sequence(gen: int, length: int = 100) -> list[np.ndarray]:
-#     gen_rng = np.random.default_rng(seed=gen)  # deterministic per gen
-#     coords = []
-#     for _ in range(length):
-#         x = gen_rng.integers(0, NCOLS)
-#         y = gen_rng.integers(0, NROWS)
-#         # CAN BE IN WALL !!
-#         coords.append(np.array([x, y]))
-#     return coords
-
-
 def select_elites(
     fitness_history: list[list[float]], population: list[np.ndarray], size: int
 ):
