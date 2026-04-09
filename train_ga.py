@@ -179,9 +179,20 @@ def crossover(genome_a: np.ndarray, genome_b: np.ndarray) -> np.ndarray:
 
 
 def get_next_gen(
-    elites: list[np.ndarray], population: list[np.ndarray], progress: float
+    elites: list[np.ndarray], population: list[np.ndarray], size: int, progress: float
 ) -> list[np.ndarray]:
-    """Get next generation population by mutations and crossovers."""
+    """Get next generation population by mutations and crossovers.
+
+    Args:
+        elites: selected elite genomes from current population
+        population: current population, used for mutation and crosover with elites
+        size: length of next generation population
+        progress:
+            float 0-1, indicating how far throught the generations training is,
+            used in mutation
+
+    Returns: next generation population
+    """
 
     def get_mutated_genomes(
         genomes_choice: list[np.ndarray], size: int, progress: float
@@ -242,7 +253,7 @@ def get_next_gen(
     next_gen.extend(crossover_genomes)
 
     # inject random immigrants
-    next_gen.extend(init_population(size=int(0.10 * ngenomes)))
+    next_gen.extend(init_population(size=size - len(next_gen)))
 
     return next_gen
 
@@ -575,7 +586,9 @@ def main() -> None:
             elites = select_elites(
                 fitness_history[-MOMENTUM:], population, size=int(0.10 * NGENOMES)
             )
-            population = get_next_gen(elites, population, progress=gen / NGENS)
+            population = get_next_gen(
+                elites, population, NGENOMES, progress=gen / NGENS
+            )
             set_population(games, population)
 
         reset_games(games)
