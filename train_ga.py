@@ -179,20 +179,43 @@ def crossover(genome_a: np.ndarray, genome_b: np.ndarray) -> np.ndarray:
 
 
 def get_next_gen(
-    elites: list[np.ndarray], population: list[np.ndarray], size: int, progress: float
+    fitness_history: list[list[float]],
+    population: list[np.ndarray],
+    progress: float,
 ) -> list[np.ndarray]:
     """Get next generation population by mutations and crossovers.
 
     Args:
-        elites: selected elite genomes from current population
+        fitness_history: fitness history per last set of trainings
         population: current population, used for mutation and crosover with elites
-        size: length of next generation population
         progress:
             float 0-1, indicating how far throught the generations training is,
             used in mutation
 
     Returns: next generation population
     """
+
+    def select_elites(
+        fitness_history: list[list[float]], population: list[np.ndarray], size: int
+    ):
+        """Elites selection mechanism - n best performing from each training set.
+
+        Args:
+            fitness_history: list of fitnesses evaluated per sets
+            population: list of genomes(arrays)
+            size: length of returned list
+
+        Returns: elite genomes (list of genomes / arrays)
+        """
+        momentum = len(fitness_history)
+        elites = []
+        for fitness in fitness_history:
+            order_desc = np.argsort(fitness)[::-1]
+            elites.extend(
+                [population[idx] for idx in order_desc[: int(size / momentum)]]
+            )
+
+        return elites
 
     def get_mutated_genomes(
         genomes_choice: list[np.ndarray], size: int, progress: float
@@ -232,6 +255,7 @@ def get_next_gen(
     ngenomes = len(population)
 
     # keep elites unchanged
+    elites = select_elites(fitness_history, population, size=int(0.10 * ngenomes))
     next_gen = elites.copy()
 
     mutated_genomes = get_mutated_genomes(
@@ -253,7 +277,7 @@ def get_next_gen(
     next_gen.extend(crossover_genomes)
 
     # inject random immigrants
-    next_gen.extend(init_population(size=size - len(next_gen)))
+    next_gen.extend(init_population(size=ngenomes - len(next_gen)))
 
     return next_gen
 
@@ -262,27 +286,6 @@ def _get_alphas(pop_size: int) -> np.ndarray:
     alphas = 63 * np.ones(pop_size)
     alphas[-1] = 255
     return alphas
-
-
-def select_elites(
-    fitness_history: list[list[float]], population: list[np.ndarray], size: int
-):
-    """Elites selection mechanism - n best performing from each training set.
-
-    Args:
-        fitness_history: list of fitnesses evaluated per sets
-        population: list of genomes(arrays)
-        size: length of returned list
-
-    Returns: elite genomes (list of genomes / arrays)
-    """
-    momentum = len(fitness_history)
-    elites = []
-    for fitness in fitness_history:
-        order_desc = np.argsort(fitness)[::-1]
-        elites.extend([population[idx] for idx in order_desc[: int(size / momentum)]])
-
-    return elites
 
 
 def get_training_set(idx: int) -> list[np.ndarray] | None:
@@ -583,11 +586,8 @@ def main() -> None:
             )
 
             # set next gen
-            elites = select_elites(
-                fitness_history[-MOMENTUM:], population, size=int(0.10 * NGENOMES)
-            )
             population = get_next_gen(
-                elites, population, NGENOMES, progress=gen / NGENS
+                fitness_history[-MOMENTUM:], population, progress=gen / NGENS
             )
             set_population(games, population)
 

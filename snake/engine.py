@@ -275,7 +275,7 @@ class HumanGame(Game):
         self.has_started = False
         super().reset()
 
-    def step(self) -> None:
+    def step(self) -> bool:
         """Do a game step - player controller sets direction, snake moves, evaluate the state."""  # noqa E501
         direction = self.player.controller.set_dir()
         self.snake.move(direction)
@@ -294,7 +294,7 @@ class GAGame(Game):
     ) -> None:
         super().__init__(ncols, nrows, player, wall, snake, apple)
 
-    def step(self) -> None:
+    def step(self) -> bool:
         """Do a game step - player controller sets direction, snake moves, evaluate the state."""  # noqa E501
         features = self.player.controller.eval_state(self.snake, self.apple, self.wall)
         direction = self.player.controller.set_dir(features)
