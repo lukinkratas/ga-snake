@@ -1,7 +1,8 @@
 - [ ] lint
 - [ ] test binary apple feature ?
 - [ ] test hidden layer 8-12-4 ?
-- [ ] fitness per Generation plot - last 100 subplot if ngens > 200
+- [ ] fitness per Generation plot - plot last 100 subplot if ngens > 200
+- [ ] q learning
 - [x] random training set - predefined 100 positions, instead of appedning on the fly?
 - [x] render plot - avg per set fitness
 - [x] eval fitness based on max, cause that one has learned some features
@@ -60,7 +61,6 @@
 - [x] add matplotlib live plot
 - [x] GAGame class? -> differ in step()i
 - [x] if players lt 5: score below, if gt 5: right + bottom matplotlib
-
 - [x] implement Generative Algortihms
 - [x] numpy array chess board like logic?
 - [x] directions enum
@@ -72,7 +72,3 @@
 - [x] parametrize grid size
 - [x] humaxn x ga window setup - diff grid size, win and scoreboard dims.
 - [x] plot - x axis always int, yaxis always float
-- [ ] render eyes dots to distinguish head, xs in case of death ?
-- [ ] center apple in train_ga
-- [ ] q learning
-- [ ] plot - add padding
