@@ -120,6 +120,11 @@ def eval_fitness(game: GAGame) -> float:
     # fitness -= steps_penalty
     # info["steps_penalty"] = steps_penalty
 
+    # # steps penalty: 0 if the most efficient path, otherwise linearly increasing
+    # steps_penalty = max(0, game.snake.steps / np.sum(game.apple._min_steps_needed) - 1)
+    # fitness -= 2 * steps_penalty
+    # info["steps_penalty"] = steps_penalty
+
     # cycling penalty: 0 if all last steps were unique, otherwise linearly increasing
     last_steps = game.snake.coords_history[-100:]
     cycling_penalty = 1 - np.unique(last_steps, axis=0).shape[0] / len(last_steps)
