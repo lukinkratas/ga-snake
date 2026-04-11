@@ -9,7 +9,7 @@ import pygame
 from numpy import linalg
 from pygame_screen_record import ScreenRecorder
 
-from snake.const import DIRECTIONS
+from snake.const import DIRECTIONS, TRAINING_SETS
 from snake.engine import GAController, GAGame, Player
 from snake.renderer import Renderer
 from snake.state import Apple, Snake
@@ -38,7 +38,7 @@ BEST_GENOMES_DIR = Path("best_genomes")
 
 SHAPE = (len(GAController.FEATURE_NAMES), len(DIRECTIONS))
 # selection momentum - number of gens after which selection occurs
-MOMENTUM = 9
+MOMENTUM = len(TRAINING_SETS) + 1
 
 
 def init_population(size: int) -> list[np.ndarray]:
@@ -299,125 +299,9 @@ def get_training_set(idx: int) -> list[np.ndarray] | None:
     Args:
         idx: training index
 
-    Returns: training coords for the apple
+    Returns: training coords for the apple or None, if idx is larger, than training sets
     """
-    training_sets = [
-        [
-            # 0: mid of wall, clockwise
-            np.array([15, 18]),
-            np.array([1, 10]),
-            np.array([15, 1]),
-            np.array([28, 10]),
-            np.array([15, 15]),
-            np.array([10, 10]),
-            np.array([15, 5]),
-            np.array([20, 10]),
-            np.array([15, 11]),
-            np.array([14, 10]),
-            np.array([15, 9]),
-            np.array([16, 10]),
-        ],
-        [
-            # 1: every corner, anti-clockwise
-            np.array([28, 1]),
-            np.array([1, 1]),
-            np.array([1, 18]),
-            np.array([28, 18]),
-            np.array([20, 5]),
-            np.array([10, 5]),
-            np.array([10, 15]),
-            np.array([20, 15]),
-            np.array([16, 9]),
-            np.array([14, 9]),
-            np.array([14, 11]),
-            np.array([16, 11]),
-        ],
-        [
-            # 2: mid of wall, back to mid, anti-clockwise
-            np.array([15, 1]),
-            np.array([15, 10]),
-            np.array([1, 10]),
-            np.array([15, 10]),
-            np.array([15, 18]),
-            np.array([15, 10]),
-            np.array([28, 10]),
-            np.array([15, 10]),
-        ],
-        [
-            # 3: every corner, back to mid, clockwise
-            np.array([28, 18]),
-            np.array([15, 10]),
-            np.array([1, 18]),
-            np.array([15, 10]),
-            np.array([1, 1]),
-            np.array([15, 10]),
-            np.array([28, 1]),
-            np.array([15, 10]),
-        ],
-        [
-            # 4: eight
-            np.array([28, 18]),
-            np.array([15, 18]),
-            np.array([15, 10]),
-            np.array([15, 1]),
-            np.array([1, 1]),
-            np.array([1, 10]),
-            np.array([15, 10]),
-            np.array([15, 1]),
-            np.array([28, 1]),
-            np.array([28, 10]),
-            np.array([15, 10]),
-            np.array([1, 10]),
-            np.array([1, 18]),
-            np.array([15, 18]),
-            np.array([15, 10]),
-        ],
-        [
-            # 5: triangles
-            np.array([28, 18]),
-            np.array([1, 18]),
-            np.array([1, 1]),
-            np.array([28, 18]),
-            np.array([28, 1]),
-            np.array([1, 1]),
-            np.array([28, 18]),
-            np.array([1, 18]),
-            np.array([28, 1]),
-            np.array([28, 18]),
-            np.array([1, 18]),
-            np.array([28, 1]),
-            np.array([1, 1]),
-            np.array([1, 18]),
-        ],
-        [
-            # 6: zig zags
-            np.array([28, 18]),
-            np.array([1, 10]),
-            np.array([28, 10]),
-            np.array([1, 1]),
-            np.array([28, 1]),
-            np.array([15, 18]),
-            np.array([15, 1]),
-            np.array([1, 18]),
-            np.array([1, 1]),
-        ],
-        [
-            # 7: side to side
-            np.array([1, 18]),
-            np.array([1, 1]),
-            np.array([2, 18]),
-            np.array([2, 1]),
-            np.array([3, 18]),
-            np.array([3, 1]),
-            np.array([28, 1]),
-            np.array([1, 2]),
-            np.array([28, 2]),
-            np.array([1, 3]),
-            np.array([28, 3]),
-            np.array([1, 4]),
-        ],
-    ]
-    return training_sets[idx] if idx < 8 else None
+    return TRAINING_SETS[idx]
 
 
 def get_random_training_set(
@@ -508,8 +392,11 @@ def main() -> None:
 
         # training set is either predefined or empty
         # (later filled with random positions)
-        training_set = get_training_set(gen % MOMENTUM) or get_random_training_set(
-            NCOLS, NROWS, games
+        training_idx = gen % MOMENTUM
+        training_set = (
+            get_training_set(training_idx)
+            if training_idx < len(TRAINING_SETS)
+            else get_random_training_set(NCOLS, NROWS, games)
         )
 
         renderer.render_games(games[::-1], alphas=_get_alphas(NGENOMES))
